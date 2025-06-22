@@ -1,0 +1,43 @@
+spring:
+  datasource:
+    username: dev_user
+    password: dev_pass
+    url: jdbc:postgresql://localhost:5432/webhook_reconciliation_dev
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      properties:
+        debug: all
+
+logging:
+  level:
+    root: DEBUG
+    ai.shreds: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.kafka: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+webhook:
+  stripe:
+    signing-secret: whsec_dev_test_key
+  paypal:
+    cert-url: https://api.sandbox.paypal.com/v1/notifications/webhooks-events
+  square:
+    application-secret: sq_dev_app_secret
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      show-details: always
