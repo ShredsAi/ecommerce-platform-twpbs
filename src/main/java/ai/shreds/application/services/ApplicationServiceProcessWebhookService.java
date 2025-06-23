@@ -70,10 +70,12 @@ public class ApplicationServiceProcessWebhookService implements ApplicationInput
             
             if (!isSignatureValid) {
                 log.error("Invalid webhook signature for externalEventId={}", command.getExternalEventId());
+                // Generate a temporary UUID for the validation error since no webhook is persisted
+                UUID tempWebhookId = UUID.randomUUID();
                 throw new SharedExceptionWebhookValidationException(
                         command.getProcessorType(),
                         "Invalid signature",
-                        null);
+                        tempWebhookId);
             }
 
             // 3. Create and persist webhook entity

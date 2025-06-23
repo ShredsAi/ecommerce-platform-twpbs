@@ -4,6 +4,7 @@ import ai.shreds.application.ports.ApplicationInputPortCorrelateWebhooks;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Slf4j
+@ConditionalOnProperty(name = "scheduling.enabled", havingValue = "true", matchIfMissing = true)
 public class AdapterScheduledJobController {
 
     private final ApplicationInputPortCorrelateWebhooks correlateWebhooksInputPort;

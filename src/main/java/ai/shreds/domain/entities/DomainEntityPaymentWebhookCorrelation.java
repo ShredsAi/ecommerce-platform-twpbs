@@ -13,11 +13,7 @@ import java.util.UUID;
 public class DomainEntityPaymentWebhookCorrelation {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id")
-    private UUID id;
-    
-    @Column(name = "webhook_id", nullable = false)
+    @Column(name = "webhook_id")
     private UUID webhookId;
     
     @Column(name = "payment_id", nullable = false)
@@ -41,10 +37,6 @@ public class DomainEntityPaymentWebhookCorrelation {
         this.paymentId = paymentId;
         this.correlationStatus = correlationStatus;
         this.createdAt = createdAt;
-    }
-
-    public UUID getId() {
-        return id;
     }
 
     public UUID getWebhookId() {

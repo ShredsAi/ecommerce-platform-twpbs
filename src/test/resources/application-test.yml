@@ -1,0 +1,65 @@
+server:
+  port: 0  # Random port for tests
+
+spring:
+  application:
+    name: webhook-reconciliation-shred-test
+  datasource:
+    # These will be overridden by @DynamicPropertySource in tests
+    url: jdbc:postgresql://localhost:5432/test
+    username: test
+    password: test
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop  # Create and drop schema for tests
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  kafka:
+    # These will be overridden by @DynamicPropertySource in tests
+    bootstrap-servers: localhost:9092
+    producer:
+      acks: all
+      retries: 3
+      enable-idempotence: true
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        max.in.flight.requests.per.connection: 1
+
+webhook:
+  stripe:
+    signing-secret: whsec_test_secret_for_integration_tests
+  paypal:
+    cert-url: https://api.sandbox.paypal.com/v1/notifications/webhooks-events
+  square:
+    application-secret: sq_app_secret_test
+
+scheduling:
+  enabled: false  # Disable scheduling during tests
+  correlation:
+    fixed-delay: 60000  # 1 minute for tests
+  reconciliation:
+    fixed-delay: 120000 # 2 minutes for tests
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    ai.shreds: DEBUG
+    org.springframework.kafka: INFO
+    org.hibernate.SQL: DEBUG
+    org.testcontainers: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
