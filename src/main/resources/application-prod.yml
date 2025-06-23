@@ -1,0 +1,136 @@
+server:
+  port: 8080
+  shutdown: graceful
+  compression:
+    enabled: true
+
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
+      idle-timeout: 30000
+      connection-timeout: 20000
+      leak-detection-threshold: 60000
+  jpa:
+    properties:
+      hibernate:
+        show_sql: false
+        format_sql: false
+        generate_statistics: false
+    show-sql: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKERS}
+    producer:
+      acks: all
+      retries: 5
+      batch-size: 32768
+      linger-ms: 5
+      buffer-memory: 67108864
+    consumer:
+      group-id: payment-processing-prod-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      max-poll-records: 500
+  flyway:
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+
+# External Services - Production URLs with environment variables
+stripe:
+  api-url: https://api.stripe.com/v1
+  api-key: ${STRIPE_API_KEY}
+  webhooks-secret: ${STRIPE_WEBHOOK_SECRET}
+  mock-enabled: false
+
+paypal:
+  api-url: https://api.paypal.com/v2
+  client-id: ${PAYPAL_CLIENT_ID}
+  client-secret: ${PAYPAL_CLIENT_SECRET}
+  mock-enabled: false
+
+square:
+  api-url: https://connect.squareup.com/v2
+  access-token: ${SQUARE_ACCESS_TOKEN}
+  mock-enabled: false
+
+pci-vault:
+  api-url: ${PCI_VAULT_URL}
+  api-key: ${PCI_VAULT_API_KEY}
+  mock-enabled: false
+
+three-ds:
+  provider-url: ${THREEDS_PROVIDER_URL}
+  api-key: ${THREEDS_API_KEY}
+  mock-enabled: false
+
+# Resilience4j - Production settings
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 200
+        minimumNumberOfCalls: 20
+        failureRateThreshold: 50
+        waitDurationInOpenState: 60s
+        permittedNumberOfCallsInHalfOpenState: 10
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+  retry:
+    configs:
+      default:
+        maxAttempts: 3
+        waitDuration: 1000ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+  bulkhead:
+    configs:
+      default:
+        maxConcurrentCalls: 50
+        maxWaitDuration: 100ms
+
+# Async Configuration - Production tuned
+async:
+  thread-pool:
+    core-size: 20
+    max-size: 100
+    queue-capacity: 200
+    thread-name-prefix: payment-prod-async-
+
+# Logging - Production level
+logging:
+  level:
+    root: INFO
+    ai.shreds: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
+    org.apache.kafka: WARN
+    com.stripe: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-},%X{spanId:-}] %logger{36} - %msg%n"
+
+# Management endpoints - Production security
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: never
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+        step: 30s
+  security:
+    enabled: true
+
+# Security settings
+security:
+  require-ssl: true
+  content-security-policy: "default-src 'self'"
