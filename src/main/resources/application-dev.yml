@@ -1,0 +1,95 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/payments_dev
+    username: postgres
+    password: postgres
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+  jpa:
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+        generate_statistics: true
+    show-sql: true
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: payment-processing-dev-group
+      auto-offset-reset: earliest
+  flyway:
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+# External Services - Mock configurations for development
+stripe:
+  api-url: https://api.stripe.com/v1
+  api-key: sk_test_51HqDevKey
+  mock-enabled: true
+
+paypal:
+  api-url: https://api.paypal.com/v2
+  client-id: dev_client_id
+  client-secret: dev_client_secret
+  mock-enabled: true
+
+square:
+  api-url: https://connect.squareup.com/v2
+  access-token: dev_access_token
+  mock-enabled: true
+
+pci-vault:
+  api-url: https://vault.example.com/api
+  api-key: dev_vault_key
+  mock-enabled: true
+
+three-ds:
+  provider-url: https://3ds.example.com/api
+  api-key: dev_3ds_key
+  mock-enabled: true
+
+# Resilience4j - More lenient for development
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 80
+        waitDurationInOpenState: 10s
+  retry:
+    configs:
+      default:
+        maxAttempts: 2
+        waitDuration: 100ms
+
+# Logging - More verbose for development
+logging:
+  level:
+    root: INFO
+    ai.shreds: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.kafka: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.transaction: DEBUG
+    com.stripe: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Management endpoints - expose more for development
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+    flyway:
+      enabled: true
