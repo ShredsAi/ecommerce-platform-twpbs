@@ -1,0 +1,154 @@
+spring:
+  application:
+    name: order-creation-shred
+  
+  profiles:
+    active: dev
+    
+  datasource:
+    url: jdbc:postgresql://localhost:5432/orders
+    username: order_user
+    password: order_pass
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+        generate_statistics: false
+    open-in-view: false
+    
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    enabled: true
+    
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: order-creation-svc
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        enable.auto.commit: false
+      isolation-level: read_committed
+    listener:
+      ack-mode: manual_immediate
+      concurrency: 3
+      
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=10m
+      
+  transaction:
+    default-timeout: 30s
+    rollback-on-commit-failure: true
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+  tomcat:
+    max-connections: 10000
+    max-threads: 200
+    
+grpc:
+  client:
+    inventory:
+      address: static://localhost:50051
+      negotiation-type: plaintext
+      max-inbound-message-size: 4194304
+      max-outbound-message-size: 4194304
+      keep-alive-time: 30s
+      keep-alive-timeout: 5s
+      keep-alive-without-calls: true
+      max-retry-attempts: 3
+    pricing:
+      address: static://localhost:50052
+      negotiation-type: plaintext
+      max-inbound-message-size: 4194304
+      max-outbound-message-size: 4194304
+      keep-alive-time: 30s
+      keep-alive-timeout: 5s
+      keep-alive-without-calls: true
+      max-retry-attempts: 3
+      
+resilience4j:
+  circuitbreaker:
+    instances:
+      inventory-service:
+        failure-rate-threshold: 50
+        minimum-number-of-calls: 5
+        sliding-window-size: 10
+        wait-duration-in-open-state: 60s
+        permitted-number-of-calls-in-half-open-state: 3
+      pricing-service:
+        failure-rate-threshold: 50
+        minimum-number-of-calls: 5
+        sliding-window-size: 10
+        wait-duration-in-open-state: 60s
+        permitted-number-of-calls-in-half-open-state: 3
+  retry:
+    instances:
+      inventory-service:
+        max-attempts: 3
+        wait-duration: 1s
+        exponential-backoff-multiplier: 2
+      pricing-service:
+        max-attempts: 3
+        wait-duration: 1s
+        exponential-backoff-multiplier: 2
+        
+logging:
+  level:
+    root: INFO
+    ai.shreds: INFO
+    org.springframework: INFO
+    org.hibernate: WARN
+    org.apache.kafka: WARN
+    io.grpc: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/order-creation.log
+    
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+      
+app:
+  kafka:
+    topics:
+      cart-events: shopping-cart-events
+  retry:
+    max-attempts: 3
+    initial-delay: 1000
+    max-delay: 10000
+    multiplier: 2.0
+  cache:
+    idempotency:
+      ttl: 24h
+      max-size: 10000

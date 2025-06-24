@@ -1,0 +1,11 @@
+package ai.shreds.shared.enums;
+
+public enum SharedErrorTypeEnum {
+    VALIDATION_ERROR,
+    INVENTORY_UNAVAILABLE,
+    PRICING_ERROR,
+    CUSTOMER_INVALID,
+    ADDRESS_INVALID,
+    PERSISTENCE_ERROR,
+    EXTERNAL_SERVICE_ERROR
+}
