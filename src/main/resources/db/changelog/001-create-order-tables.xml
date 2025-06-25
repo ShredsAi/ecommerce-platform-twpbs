@@ -8,7 +8,7 @@
     <!-- Create addresses table -->
     <changeSet id="001-create-addresses-table" author="order-creation-shred">
         <createTable tableName="addresses">
-            <column name="address_id" type="${uuid.type}">
+            <column name="address_id" type="uuid">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="street1" type="varchar(255)">
@@ -25,7 +25,7 @@
             <column name="country" type="char(2)">
                 <constraints nullable="false"/>
             </column>
-            <column name="created_at" type="${timestamp.type}" defaultValueComputed="CURRENT_TIMESTAMP">
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="CURRENT_TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
         </createTable>
@@ -37,7 +37,7 @@
     <!-- Create orders table -->
     <changeSet id="002-create-orders-table" author="order-creation-shred">
         <createTable tableName="orders">
-            <column name="order_id" type="${uuid.type}">
+            <column name="order_id" type="uuid">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="order_number" type="varchar(30)">
@@ -52,31 +52,31 @@
             <column name="order_status" type="varchar(20)">
                 <constraints nullable="false"/>
             </column>
-            <column name="order_date" type="${timestamp.type}" defaultValueComputed="CURRENT_TIMESTAMP">
+            <column name="order_date" type="timestamp with time zone" defaultValueComputed="CURRENT_TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
-            <column name="subtotal_amount" type="${decimal.type}">
+            <column name="subtotal_amount" type="decimal(12,2)">
                 <constraints nullable="false"/>
             </column>
-            <column name="total_amount" type="${decimal.type}">
+            <column name="total_amount" type="decimal(12,2)">
                 <constraints nullable="false"/>
             </column>
             <column name="currency" type="char(3)" defaultValue="USD">
                 <constraints nullable="false"/>
             </column>
-            <column name="billing_address_id" type="${uuid.type}">
+            <column name="billing_address_id" type="uuid">
                 <constraints nullable="false"/>
             </column>
-            <column name="shipping_address_id" type="${uuid.type}">
+            <column name="shipping_address_id" type="uuid">
                 <constraints nullable="false"/>
             </column>
             <column name="version" type="integer" defaultValue="0">
                 <constraints nullable="false"/>
             </column>
-            <column name="created_at" type="${timestamp.type}" defaultValueComputed="CURRENT_TIMESTAMP">
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="CURRENT_TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
-            <column name="updated_at" type="${timestamp.type}" defaultValueComputed="CURRENT_TIMESTAMP">
+            <column name="updated_at" type="timestamp with time zone" defaultValueComputed="CURRENT_TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
         </createTable>
@@ -88,10 +88,10 @@
     <!-- Create order_items table -->
     <changeSet id="003-create-order-items-table" author="order-creation-shred">
         <createTable tableName="order_items">
-            <column name="order_item_id" type="${uuid.type}">
+            <column name="order_item_id" type="uuid">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="order_id" type="${uuid.type}">
+            <column name="order_id" type="uuid">
                 <constraints nullable="false"/>
             </column>
             <column name="product_id" type="varchar(50)">
@@ -100,10 +100,10 @@
             <column name="quantity" type="integer">
                 <constraints nullable="false"/>
             </column>
-            <column name="unit_price" type="${decimal.type}">
+            <column name="unit_price" type="decimal(12,2)">
                 <constraints nullable="false"/>
             </column>
-            <column name="total_price" type="${decimal.type}">
+            <column name="total_price" type="decimal(12,2)">
                 <constraints nullable="false"/>
             </column>
             <column name="currency" type="char(3)" defaultValue="USD">
@@ -112,7 +112,7 @@
             <column name="item_status" type="varchar(20)" defaultValue="PENDING">
                 <constraints nullable="false"/>
             </column>
-            <column name="created_at" type="${timestamp.type}" defaultValueComputed="CURRENT_TIMESTAMP">
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="CURRENT_TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
         </createTable>
@@ -124,16 +124,16 @@
     <!-- Create payment_details table -->
     <changeSet id="004-create-payment-details-table" author="order-creation-shred">
         <createTable tableName="payment_details">
-            <column name="payment_id" type="${uuid.type}">
+            <column name="payment_id" type="uuid">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="order_id" type="${uuid.type}">
+            <column name="order_id" type="uuid">
                 <constraints nullable="false" unique="true"/>
             </column>
             <column name="payment_status" type="varchar(20)" defaultValue="PENDING">
                 <constraints nullable="false"/>
             </column>
-            <column name="payment_amount" type="${decimal.type}">
+            <column name="payment_amount" type="decimal(12,2)">
                 <constraints nullable="false"/>
             </column>
             <column name="currency" type="char(3)" defaultValue="USD">
@@ -145,7 +145,7 @@
             <column name="payment_method_type" type="varchar(30)"/>
             <column name="payment_method_details" type="text"/>
             <column name="transaction_id" type="varchar(100)"/>
-            <column name="created_at" type="${timestamp.type}" defaultValueComputed="CURRENT_TIMESTAMP">
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="CURRENT_TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
         </createTable>
@@ -157,10 +157,10 @@
     <!-- Create shipping_details table -->
     <changeSet id="005-create-shipping-details-table" author="order-creation-shred">
         <createTable tableName="shipping_details">
-            <column name="shipping_id" type="${uuid.type}">
+            <column name="shipping_id" type="uuid">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="order_id" type="${uuid.type}">
+            <column name="order_id" type="uuid">
                 <constraints nullable="false" unique="true"/>
             </column>
             <column name="shipping_status" type="varchar(20)" defaultValue="PENDING">
@@ -171,11 +171,11 @@
             <column name="shipping_method" type="varchar(50)"/>
             <column name="estimated_delivery_date" type="date"/>
             <column name="actual_delivery_date" type="date"/>
-            <column name="shipping_cost" type="${decimal.type}" defaultValue="0.00"/>
-            <column name="created_at" type="${timestamp.type}" defaultValueComputed="CURRENT_TIMESTAMP">
+            <column name="shipping_cost" type="decimal(12,2)" defaultValue="0.00"/>
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="CURRENT_TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
-            <column name="updated_at" type="${timestamp.type}" defaultValueComputed="CURRENT_TIMESTAMP">
+            <column name="updated_at" type="timestamp with time zone" defaultValueComputed="CURRENT_TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
         </createTable>
@@ -272,7 +272,6 @@
         
         <rollback>
             <dropIndex tableName="orders" indexName="idx_orders_cart_id"/>
-            <dropIndex tableName="orders" indexName="idx_orders_customer_id"/>
             <dropIndex tableName="orders" indexName="idx_orders_status"/>
             <dropIndex tableName="orders" indexName="idx_orders_date"/>
             <dropIndex tableName="orders" indexName="idx_orders_customer_date"/>

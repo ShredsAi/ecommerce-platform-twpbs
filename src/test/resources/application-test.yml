@@ -1,0 +1,149 @@
+spring:
+  application:
+    name: order-creation-shred-test
+    
+  datasource:
+    url: jdbc:postgresql://localhost:5433/test_orders
+    username: test_user
+    password: test_pass
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 10000
+      idle-timeout: 300000
+      max-lifetime: 900000
+      
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          batch_size: 10
+        order_inserts: true
+        order_updates: true
+        generate_statistics: false
+    open-in-view: false
+    
+  liquibase:
+    change-log: classpath:db/changelog/db-changelog-master.xml
+    enabled: true
+    
+  kafka:
+    bootstrap-servers: localhost:9093
+    consumer:
+      group-id: order-creation-test-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        enable.auto.commit: false
+      isolation-level: read_committed
+    listener:
+      ack-mode: manual_immediate
+      concurrency: 1
+      
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=100,expireAfterWrite=5m
+      
+  transaction:
+    default-timeout: 10s
+    rollback-on-commit-failure: true
+
+server:
+  port: 0
+  servlet:
+    context-path: /
+    
+grpc:
+  client:
+    inventory:
+      address: static://localhost:50091
+      negotiation-type: plaintext
+      max-inbound-message-size: 1048576
+      max-outbound-message-size: 1048576
+      keep-alive-time: 10s
+      keep-alive-timeout: 5s
+      keep-alive-without-calls: false
+      max-retry-attempts: 1
+    pricing:
+      address: static://localhost:50092
+      negotiation-type: plaintext
+      max-inbound-message-size: 1048576
+      max-outbound-message-size: 1048576
+      keep-alive-time: 10s
+      keep-alive-timeout: 5s
+      keep-alive-without-calls: false
+      max-retry-attempts: 1
+      
+resilience4j:
+  circuitbreaker:
+    instances:
+      inventory-service:
+        failure-rate-threshold: 50
+        minimum-number-of-calls: 2
+        sliding-window-size: 5
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 2
+      pricing-service:
+        failure-rate-threshold: 50
+        minimum-number-of-calls: 2
+        sliding-window-size: 5
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 2
+  retry:
+    instances:
+      inventory-service:
+        max-attempts: 2
+        wait-duration: 500ms
+        exponential-backoff-multiplier: 1.5
+      pricing-service:
+        max-attempts: 2
+        wait-duration: 500ms
+        exponential-backoff-multiplier: 1.5
+        
+logging:
+  level:
+    root: INFO
+    ai.shreds: DEBUG
+    org.springframework: INFO
+    org.hibernate: INFO
+    org.apache.kafka: INFO
+    io.grpc: INFO
+    org.testcontainers: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+      
+app:
+  kafka:
+    topics:
+      cart-events: test-shopping-cart-events
+  retry:
+    max-attempts: 2
+    initial-delay: 500
+    max-delay: 2000
+    multiplier: 1.5
+  cache:
+    idempotency:
+      ttl: 1h
+      max-size: 100
+  startup:
+    health-check:
+      enabled: false

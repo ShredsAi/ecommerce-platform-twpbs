@@ -88,7 +88,7 @@ public class ApplicationOrderCreationService implements ApplicationCreateOrderIn
                     priceRes.getTotal().toDomainValue()
             );
 
-            // Domain use case
+            // Domain use case - this already publishes the order created event
             DomainOrderAggregate aggregate = orderCreationUseCase.execute(
                     request.getCartId(),
                     request.getCustomerId(),
@@ -101,8 +101,8 @@ public class ApplicationOrderCreationService implements ApplicationCreateOrderIn
 
             DomainOrderAggregate saved = orderRepositoryPort.save(aggregate);
 
-            // Publish success event
-            eventPublisherPort.publishOrderCreated(saved.toDTO());
+            // Remove duplicate event publishing - domain layer already handles this
+            // eventPublisherPort.publishOrderCreated(saved.toDTO());
 
             return ApplicationOrderCreationResponseDTO.fromDomainOrder(saved);
         } catch (ApplicationOrderCreationException ex) {
@@ -125,7 +125,15 @@ public class ApplicationOrderCreationService implements ApplicationCreateOrderIn
         event.setCustomerId(request.getCustomerId());
         event.setErrorType(ex.getErrorType());
         event.setErrorMessage(ex.getMessage());
-        event.setFailureReason(ex.getErrorType().name());
+        event.setCorrelationId(request.getCartId()); // Set correlationId to cartId for tracking
+        
+        // Set a more descriptive failure reason with lowercase text instead of just the enum name
+        if (ex.getErrorType() == SharedErrorTypeEnum.INVENTORY_UNAVAILABLE) {
+            event.setFailureReason("Product inventory unavailable or insufficient quantity");
+        } else {
+            event.setFailureReason("Error during order creation: " + ex.getErrorType().name().toLowerCase().replace('_', ' '));
+        }
+        
         event.setTimestamp(Instant.now());
         eventPublisherPort.publishOrderCreationFailed(event);
     }

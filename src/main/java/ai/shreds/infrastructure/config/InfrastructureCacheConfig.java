@@ -7,6 +7,7 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 import java.util.concurrent.TimeUnit;
 
@@ -23,15 +24,11 @@ public class InfrastructureCacheConfig {
     }
 
     @Bean
+    @Primary
     public CaffeineCacheManager caffeineCacheManager(Caffeine<Object, Object> caffeine) {
         CaffeineCacheManager cacheManager = new CaffeineCacheManager("orderCache");
         cacheManager.setCaffeine(caffeine);
         return cacheManager;
-    }
-
-    @Bean
-    public CacheManager cacheManager(CaffeineCacheManager caffeineCacheManager) {
-        return caffeineCacheManager;
     }
 
     @Bean

@@ -81,7 +81,7 @@ public class DomainServiceOrderCreation implements DomainInputPortCreateOrder {
             
             // 7. Final validation of the created aggregate
             orderAggregate.validateInvariants();
-            orderAggregate.calculateTotals();
+            // Removed calculateTotals() call - factory already sets correct amounts from pricing service
             
             // 8. Validate order items
             validationService.validateOrderItems(orderAggregate.getOrderItems());

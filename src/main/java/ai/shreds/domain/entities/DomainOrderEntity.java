@@ -67,8 +67,8 @@ public class DomainOrderEntity {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "orderId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<DomainOrderItemEntity> orderItems;
+    // Removed OneToMany relationship that was causing persistence conflicts
+    // Order items are managed separately by the repository
 
     @PrePersist
     protected void onCreate() {
@@ -109,17 +109,13 @@ public class DomainOrderEntity {
             throw new DomainValidationException("Cart ID is required", 
                 List.of("cartId cannot be null or empty"));
         }
-        if (orderItems != null && orderItems.size() > 50) {
-            throw new DomainValidationException("Maximum 50 items per order allowed", 
-                List.of("Order cannot contain more than 50 items"));
-        }
     }
 
     public DomainOrderAggregate toAggregate(List<DomainOrderItemEntity> orderItems,
-                                           DomainPaymentDetailsEntity paymentDetails,
-                                           DomainShippingDetailsEntity shippingDetails,
-                                           DomainAddressEntity billingAddress,
-                                           DomainAddressEntity shippingAddress) {
+                                          DomainPaymentDetailsEntity paymentDetails,
+                                          DomainShippingDetailsEntity shippingDetails,
+                                          DomainAddressEntity billingAddress,
+                                          DomainAddressEntity shippingAddress) {
         return DomainOrderAggregate.builder()
             .order(this)
             .orderItems(orderItems)

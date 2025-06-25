@@ -8,8 +8,6 @@ import ai.shreds.shared.dtos.SharedOrderCreatedEventDTO;
 import ai.shreds.shared.dtos.SharedOrderCreationFailedEventDTO;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Component
 public class InfrastructureSpringEventPublisherImpl implements ApplicationEventPublisherOutputPort, DomainOutputPortEventPublisher {
@@ -22,30 +20,22 @@ public class InfrastructureSpringEventPublisherImpl implements ApplicationEventP
 
     @Override
     public void publishOrderCreated(SharedOrderCreatedEventDTO event) {
-        publishAfterCommit(event);
+        // Publish immediately for integration tests and synchronous processing
+        publisher.publishEvent(event);
     }
 
     @Override
     public void publishOrderCreationFailed(SharedOrderCreationFailedEventDTO event) {
-        publishAfterCommit(event);
+        publisher.publishEvent(event);
     }
 
     @Override
     public void publishOrderCreated(DomainOrderCreatedEvent event) {
-        publishAfterCommit(event.toSharedDTO());
+        publisher.publishEvent(event.toSharedDTO());
     }
 
     @Override
     public void publishOrderCreationFailed(DomainOrderCreationFailedEvent event) {
-        publishAfterCommit(event.toSharedDTO());
-    }
-
-    private void publishAfterCommit(Object event) {
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                publisher.publishEvent(event);
-            }
-        });
+        publisher.publishEvent(event.toSharedDTO());
     }
 }

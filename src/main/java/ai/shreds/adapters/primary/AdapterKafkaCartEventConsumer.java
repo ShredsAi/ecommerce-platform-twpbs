@@ -37,11 +37,23 @@ public class AdapterKafkaCartEventConsumer {
     @KafkaListener(topics = "shopping-cart-events", groupId = "order-creation-svc")
     public void consumeCartCheckedOutEvent(@Payload String message,
                                           @Header(KafkaHeaders.RECEIVED_KEY) String key,
-                                          @Header Map<String, Object> headers,
+                                          ConsumerRecord<String, String> record,
                                           Acknowledgment acknowledgment) {
         logger.info("Received CartCheckedOut event with key: {}", key);
         
         try {
+            // Extract headers from ConsumerRecord if needed
+            Map<String, Object> headers = record.headers().toArray().length > 0 ? 
+                java.util.stream.Stream.of(record.headers().toArray())
+                    .collect(java.util.stream.Collectors.toMap(
+                        h -> h.key(), 
+                        h -> new String(h.value()),
+                        (v1, v2) -> v1
+                    )) : 
+                java.util.Collections.emptyMap();
+            
+            logger.debug("Processing message with headers: {}", headers);
+            
             SharedCartCheckedOutEventDTO dto = mapToDTO(message);
             
             if (handleIdempotency(dto.getCartId())) {

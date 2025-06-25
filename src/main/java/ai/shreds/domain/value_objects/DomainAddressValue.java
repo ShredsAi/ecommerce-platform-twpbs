@@ -6,6 +6,7 @@ import lombok.Getter;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Getter
 public class DomainAddressValue {
@@ -75,6 +76,7 @@ public class DomainAddressValue {
 
     public DomainAddressEntity toEntity() {
         return DomainAddressEntity.builder()
+            .addressId(UUID.randomUUID()) // Generate UUID immediately
             .street1(this.street1)
             .street2(this.street2)
             .city(this.city)
