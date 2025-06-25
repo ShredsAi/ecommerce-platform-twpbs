@@ -1,0 +1,19 @@
+spring:
+  profiles: prod
+  jpa:
+    show-sql: false
+  datasource:
+    url: ${DATABASE_URL}
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKERS}
+  jms:
+    activemq:
+      broker-url: ${JMS_BROKER_URL}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
+logging:
+  level:
+    root: INFO

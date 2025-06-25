@@ -1,0 +1,42 @@
+syntax = "proto3";
+package inventory;
+
+service InventoryService {
+  rpc ReleaseReservedStock(ReleaseStockRequest) returns (ReleaseStockResponse);
+  rpc IncrementStock(IncrementStockRequest) returns (IncrementStockResponse);
+  rpc CheckStockAvailability(CheckStockRequest) returns (CheckStockResponse);
+}
+
+message ReleaseStockRequest {
+  string orderId = 1;
+  repeated StockItem items = 2;
+}
+
+message ReleaseStockResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message IncrementStockRequest {
+  string returnId = 1;
+  repeated StockItem items = 2;
+}
+
+message IncrementStockResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message CheckStockRequest {
+  string orderId = 1;
+}
+
+message CheckStockResponse {
+  bool available = 1;
+}
+
+message StockItem {
+  string productId = 1;
+  int32 quantity = 2;
+  string warehouseId = 3;
+}

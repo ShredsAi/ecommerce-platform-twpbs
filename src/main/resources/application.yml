@@ -1,0 +1,179 @@
+spring:
+  application:
+    name: order-cancellation-returns
+  datasource:
+    url: jdbc:postgresql://localhost:5432/orderdb
+    username: orderuser
+    password: orderpass
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
+      leak-detection-threshold: 60000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.SnakeCasePhysicalNamingStrategy
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        generate_statistics: false
+        jdbc:
+          batch_size: 20
+          order_inserts: true
+          order_updates: true
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+    consumer:
+      group-id: order-cancellation-returns
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
+      properties:
+        spring.json.trusted.packages: "ai.shreds.*"
+  jms:
+    activemq:
+      broker-url: tcp://localhost:61616
+      user: admin
+      password: admin
+    template:
+      receive-timeout: 5000
+      delivery-mode: persistent
+
+grpc:
+  inventory:
+    host: localhost
+    port: 9090
+    deadline: 5s
+    keep-alive-time: 30s
+    keep-alive-timeout: 10s
+    keep-alive-without-calls: true
+  order:
+    host: localhost
+    port: 9091
+    deadline: 5s
+    keep-alive-time: 30s
+    keep-alive-timeout: 10s
+    keep-alive-without-calls: true
+
+payment:
+  service:
+    url: http://localhost:8081
+    timeout: 30s
+    retry: 3
+
+notification:
+  service:
+    url: http://localhost:8082
+    timeout: 15s
+    retry: 2
+
+resilience4j:
+  retry:
+    instances:
+      payment-service:
+        maxAttempts: 3
+        waitDuration: 500ms
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.springframework.web.client.HttpServerErrorException
+          - java.net.ConnectException
+          - java.net.SocketTimeoutException
+      inventory-service:
+        maxAttempts: 3
+        waitDuration: 300ms
+        exponentialBackoffMultiplier: 1.5
+      notification-service:
+        maxAttempts: 2
+        waitDuration: 200ms
+  circuitbreaker:
+    instances:
+      inventory-service:
+        registerHealthIndicator: true
+        slidingWindowSize: 100
+        slidingWindowType: COUNT_BASED
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        minimumNumberOfCalls: 10
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+      payment-service:
+        registerHealthIndicator: true
+        slidingWindowSize: 50
+        failureRateThreshold: 60
+        waitDurationInOpenState: 15s
+        permittedNumberOfCallsInHalfOpenState: 5
+        minimumNumberOfCalls: 5
+      order-service:
+        registerHealthIndicator: true
+        slidingWindowSize: 30
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+
+scheduling:
+  cancellation:
+    timeout: "0 0/30 * * * ?"  # Every 30 minutes
+  return:
+    monitor: "0 0 2 * * ?"     # Daily at 2 AM
+
+business:
+  rules:
+    cancellation:
+      window-hours: 2
+      fraud-override: true
+    return:
+      period-days: 30
+      holiday-extension-days: 15
+      restocking-fee-percentage: 10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+    metrics:
+      enabled: true
+  health:
+    circuitbreakers:
+      enabled: true
+    db:
+      enabled: true
+    diskspace:
+      enabled: true
+
+logging:
+  level:
+    ai.shreds: DEBUG
+    org.springframework.kafka: INFO
+    org.springframework.jms: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    io.grpc: INFO
+    io.github.resilience4j: DEBUG
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+  tomcat:
+    max-threads: 200
+    min-spare-threads: 10
+    connection-timeout: 20s
