@@ -1,0 +1,159 @@
+version: '3.8'
+
+services:
+  # Order Creation Service
+  order-creation-shred:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: order-creation-shred
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - DB_URL=jdbc:postgresql://postgres:5432/orders_dev
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - KAFKA_BROKERS=kafka:29092
+      - INVENTORY_SERVICE_URL=static://mock-inventory-service:50051
+      - PRICING_SERVICE_URL=static://mock-pricing-service:50052
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      mock-inventory-service:
+        condition: service_started
+      mock-pricing-service:
+        condition: service_started
+    networks:
+      - order-network
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-orders
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=orders_dev
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - order-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Zookeeper for Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - order-network
+    restart: unless-stopped
+
+  # Kafka Message Broker
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+    depends_on:
+      - zookeeper
+    networks:
+      - order-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:29092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Kafka UI for development
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8081:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    depends_on:
+      - kafka
+    networks:
+      - order-network
+    restart: unless-stopped
+
+  # Mock Inventory Service
+  mock-inventory-service:
+    image: grpcui/grpcui:latest
+    container_name: mock-inventory-service
+    ports:
+      - "50051:50051"
+      - "8082:8080"
+    environment:
+      - GRPC_PORT=50051
+      - HTTP_PORT=8080
+    networks:
+      - order-network
+    restart: unless-stopped
+
+  # Mock Pricing Service
+  mock-pricing-service:
+    image: grpcui/grpcui:latest
+    container_name: mock-pricing-service
+    ports:
+      - "50052:50052"
+      - "8083:8080"
+    environment:
+      - GRPC_PORT=50052
+      - HTTP_PORT=8080
+    networks:
+      - order-network
+    restart: unless-stopped
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: redis-cache
+    ports:
+      - "6379:6379"
+    networks:
+      - order-network
+    restart: unless-stopped
+
+networks:
+  order-network:
+    driver: bridge
+    name: order-network
+
+volumes:
+  postgres-data:
+    driver: local
+    name: postgres-data

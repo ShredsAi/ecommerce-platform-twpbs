@@ -1,0 +1,208 @@
+syntax = "proto3";
+
+package inventory.v1;
+
+option java_package = "ai.shreds.grpc.inventory.v1";
+option java_outer_classname = "InventoryServiceProto";
+option java_multiple_files = true;
+
+// Inventory Service for stock availability validation
+service InventoryService {
+  // Validates stock availability for multiple items
+  rpc ValidateStockAvailability(ValidateStockAvailabilityRequest) returns (ValidateStockAvailabilityResponse);
+  
+  // Reserve stock for order processing
+  rpc ReserveStock(ReserveStockRequest) returns (ReserveStockResponse);
+  
+  // Release stock reservation
+  rpc ReleaseStockReservation(ReleaseStockReservationRequest) returns (ReleaseStockReservationResponse);
+}
+
+// Request message for stock availability validation
+message ValidateStockAvailabilityRequest {
+  // List of items to validate
+  repeated ItemRequest items = 1;
+  
+  // Optional reservation ID for tracking
+  string reservation_id = 2;
+  
+  // Request metadata
+  RequestMetadata metadata = 3;
+}
+
+// Response message for stock availability validation
+message ValidateStockAvailabilityResponse {
+  // Validation results for each item
+  repeated ItemResult results = 1;
+  
+  // Overall validation status
+  ValidationStatus status = 2;
+  
+  // Response metadata
+  ResponseMetadata metadata = 3;
+}
+
+// Item request for stock validation
+message ItemRequest {
+  // Product identifier
+  string product_id = 1;
+  
+  // Requested quantity
+  int32 quantity = 2;
+  
+  // Warehouse location (optional)
+  string warehouse_id = 3;
+}
+
+// Item validation result
+message ItemResult {
+  // Product identifier
+  string product_id = 1;
+  
+  // Whether the requested quantity is available
+  bool available = 2;
+  
+  // Available quantity in stock
+  int32 available_qty = 3;
+  
+  // Reserved quantity
+  int32 reserved_qty = 4;
+  
+  // Warehouse location
+  string warehouse_id = 5;
+  
+  // Error message if validation failed
+  string error_message = 6;
+}
+
+// Stock reservation request
+message ReserveStockRequest {
+  // Items to reserve
+  repeated ItemRequest items = 1;
+  
+  // Reservation identifier
+  string reservation_id = 2;
+  
+  // Customer identifier
+  string customer_id = 3;
+  
+  // Order identifier
+  string order_id = 4;
+  
+  // Reservation expiry time in seconds
+  int64 expiry_seconds = 5;
+  
+  // Request metadata
+  RequestMetadata metadata = 6;
+}
+
+// Stock reservation response
+message ReserveStockResponse {
+  // Reservation results
+  repeated ReservationResult results = 1;
+  
+  // Reservation identifier
+  string reservation_id = 2;
+  
+  // Overall reservation status
+  ReservationStatus status = 3;
+  
+  // Response metadata
+  ResponseMetadata metadata = 4;
+}
+
+// Release stock reservation request
+message ReleaseStockReservationRequest {
+  // Reservation identifier to release
+  string reservation_id = 1;
+  
+  // Reason for release
+  ReleaseReason reason = 2;
+  
+  // Request metadata
+  RequestMetadata metadata = 3;
+}
+
+// Release stock reservation response
+message ReleaseStockReservationResponse {
+  // Release status
+  ReleaseStatus status = 1;
+  
+  // Released items
+  repeated string product_ids = 2;
+  
+  // Response metadata
+  ResponseMetadata metadata = 3;
+}
+
+// Reservation result
+message ReservationResult {
+  // Product identifier
+  string product_id = 1;
+  
+  // Whether reservation was successful
+  bool reserved = 2;
+  
+  // Reserved quantity
+  int32 reserved_qty = 3;
+  
+  // Error message if reservation failed
+  string error_message = 4;
+}
+
+// Request metadata
+message RequestMetadata {
+  // Request timestamp
+  int64 timestamp = 1;
+  
+  // Correlation ID for tracing
+  string correlation_id = 2;
+  
+  // Client identifier
+  string client_id = 3;
+}
+
+// Response metadata
+message ResponseMetadata {
+  // Response timestamp
+  int64 timestamp = 1;
+  
+  // Processing time in milliseconds
+  int64 processing_time_ms = 2;
+  
+  // Server identifier
+  string server_id = 3;
+}
+
+// Validation status enum
+enum ValidationStatus {
+  VALIDATION_STATUS_UNSPECIFIED = 0;
+  VALIDATION_STATUS_SUCCESS = 1;
+  VALIDATION_STATUS_PARTIAL_FAILURE = 2;
+  VALIDATION_STATUS_FAILURE = 3;
+}
+
+// Reservation status enum
+enum ReservationStatus {
+  RESERVATION_STATUS_UNSPECIFIED = 0;
+  RESERVATION_STATUS_SUCCESS = 1;
+  RESERVATION_STATUS_PARTIAL_FAILURE = 2;
+  RESERVATION_STATUS_FAILURE = 3;
+}
+
+// Release reason enum
+enum ReleaseReason {
+  RELEASE_REASON_UNSPECIFIED = 0;
+  RELEASE_REASON_ORDER_CANCELLED = 1;
+  RELEASE_REASON_PAYMENT_FAILED = 2;
+  RELEASE_REASON_INVENTORY_ERROR = 3;
+  RELEASE_REASON_EXPIRED = 4;
+}
+
+// Release status enum
+enum ReleaseStatus {
+  RELEASE_STATUS_UNSPECIFIED = 0;
+  RELEASE_STATUS_SUCCESS = 1;
+  RELEASE_STATUS_FAILURE = 2;
+  RELEASE_STATUS_NOT_FOUND = 3;
+}

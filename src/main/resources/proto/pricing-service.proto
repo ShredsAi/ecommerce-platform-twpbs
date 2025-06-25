@@ -1,0 +1,295 @@
+syntax = "proto3";
+
+package pricing.v1;
+
+option java_package = "ai.shreds.grpc.pricing.v1";
+option java_outer_classname = "PricingServiceProto";
+option java_multiple_files = true;
+
+// Pricing Service for order pricing calculation
+service PricingService {
+  // Calculate comprehensive pricing for an order
+  rpc CalculateOrderPricing(CalculateOrderPricingRequest) returns (CalculateOrderPricingResponse);
+  
+  // Get current product prices
+  rpc GetProductPrices(GetProductPricesRequest) returns (GetProductPricesResponse);
+  
+  // Apply promotions and discounts
+  rpc ApplyPromotions(ApplyPromotionsRequest) returns (ApplyPromotionsResponse);
+}
+
+// Request for order pricing calculation
+message CalculateOrderPricingRequest {
+  // Customer identifier
+  string customer_id = 1;
+  
+  // Items to price
+  repeated PricingItem items = 2;
+  
+  // Billing address for tax calculation
+  Address billing_address = 3;
+  
+  // Shipping address for shipping cost calculation
+  Address shipping_address = 4;
+  
+  // Promotional codes to apply
+  repeated string promotions = 5;
+  
+  // Currency code (ISO 4217)
+  string currency = 6;
+  
+  // Customer tier for pricing
+  string customer_tier = 7;
+  
+  // Request metadata
+  RequestMetadata metadata = 8;
+}
+
+// Response for order pricing calculation
+message CalculateOrderPricingResponse {
+  // Subtotal before taxes and fees
+  Money subtotal = 1;
+  
+  // Tax amount
+  Money tax = 2;
+  
+  // Total discount amount
+  Money discounts = 3;
+  
+  // Shipping cost
+  Money shipping_cost = 4;
+  
+  // Final total amount
+  Money total = 5;
+  
+  // Detailed pricing breakdown per item
+  repeated ItemPricing item_breakdown = 6;
+  
+  // Applied promotions
+  repeated AppliedPromotion applied_promotions = 7;
+  
+  // Tax breakdown
+  repeated TaxBreakdown tax_breakdown = 8;
+  
+  // Pricing validity period
+  int64 valid_until_timestamp = 9;
+  
+  // Response metadata
+  ResponseMetadata metadata = 10;
+}
+
+// Item for pricing calculation
+message PricingItem {
+  // Product identifier
+  string product_id = 1;
+  
+  // Quantity
+  int32 quantity = 2;
+  
+  // Variant identifier (size, color, etc.)
+  string variant_id = 3;
+}
+
+// Detailed item pricing information
+message ItemPricing {
+  // Product identifier
+  string product_id = 1;
+  
+  // Unit price before discounts
+  Money unit_price = 2;
+  
+  // Unit price after discounts
+  Money discounted_unit_price = 3;
+  
+  // Total price for this item (quantity * discounted_unit_price)
+  Money total_price = 4;
+  
+  // Quantity
+  int32 quantity = 5;
+  
+  // Applied discounts for this item
+  repeated AppliedDiscount discounts = 6;
+}
+
+// Money representation
+message Money {
+  // Amount in minor units (e.g., cents for USD)
+  int64 amount = 1;
+  
+  // Currency code (ISO 4217)
+  string currency = 2;
+}
+
+// Address for tax and shipping calculations
+message Address {
+  // Street address line 1
+  string street1 = 1;
+  
+  // Street address line 2
+  string street2 = 2;
+  
+  // City
+  string city = 3;
+  
+  // State or province
+  string state = 4;
+  
+  // Postal or ZIP code
+  string postal_code = 5;
+  
+  // Country code (ISO 3166-1 alpha-2)
+  string country = 6;
+}
+
+// Applied promotion information
+message AppliedPromotion {
+  // Promotion code
+  string code = 1;
+  
+  // Promotion name
+  string name = 2;
+  
+  // Discount amount
+  Money discount_amount = 3;
+  
+  // Promotion type
+  PromotionType type = 4;
+}
+
+// Applied discount information
+message AppliedDiscount {
+  // Discount name
+  string name = 1;
+  
+  // Discount amount
+  Money amount = 2;
+  
+  // Discount type
+  DiscountType type = 3;
+}
+
+// Tax breakdown information
+message TaxBreakdown {
+  // Tax name (e.g., "Sales Tax", "VAT")
+  string name = 1;
+  
+  // Tax rate (e.g., 0.08 for 8%)
+  double rate = 2;
+  
+  // Tax amount
+  Money amount = 3;
+  
+  // Taxable amount
+  Money taxable_amount = 4;
+}
+
+// Request for product prices
+message GetProductPricesRequest {
+  // Product identifiers
+  repeated string product_ids = 1;
+  
+  // Customer identifier for tier pricing
+  string customer_id = 2;
+  
+  // Currency code
+  string currency = 3;
+  
+  // Request metadata
+  RequestMetadata metadata = 4;
+}
+
+// Response for product prices
+message GetProductPricesResponse {
+  // Product prices
+  repeated ProductPrice prices = 1;
+  
+  // Response metadata
+  ResponseMetadata metadata = 2;
+}
+
+// Product price information
+message ProductPrice {
+  // Product identifier
+  string product_id = 1;
+  
+  // Current price
+  Money price = 2;
+  
+  // List price (MSRP)
+  Money list_price = 3;
+  
+  // Price tier
+  string tier = 4;
+}
+
+// Request for applying promotions
+message ApplyPromotionsRequest {
+  // Customer identifier
+  string customer_id = 1;
+  
+  // Items to apply promotions to
+  repeated PricingItem items = 2;
+  
+  // Promotion codes
+  repeated string promotion_codes = 3;
+  
+  // Current subtotal
+  Money subtotal = 4;
+  
+  // Request metadata
+  RequestMetadata metadata = 5;
+}
+
+// Response for applying promotions
+message ApplyPromotionsResponse {
+  // Applied promotions
+  repeated AppliedPromotion promotions = 1;
+  
+  // Total discount amount
+  Money total_discount = 2;
+  
+  // Response metadata
+  ResponseMetadata metadata = 3;
+}
+
+// Request metadata
+message RequestMetadata {
+  // Request timestamp
+  int64 timestamp = 1;
+  
+  // Correlation ID
+  string correlation_id = 2;
+  
+  // Client identifier
+  string client_id = 3;
+}
+
+// Response metadata
+message ResponseMetadata {
+  // Response timestamp
+  int64 timestamp = 1;
+  
+  // Processing time in milliseconds
+  int64 processing_time_ms = 2;
+  
+  // Server identifier
+  string server_id = 3;
+}
+
+// Promotion type enum
+enum PromotionType {
+  PROMOTION_TYPE_UNSPECIFIED = 0;
+  PROMOTION_TYPE_PERCENTAGE = 1;
+  PROMOTION_TYPE_FIXED_AMOUNT = 2;
+  PROMOTION_TYPE_BOGO = 3;
+  PROMOTION_TYPE_FREE_SHIPPING = 4;
+}
+
+// Discount type enum
+enum DiscountType {
+  DISCOUNT_TYPE_UNSPECIFIED = 0;
+  DISCOUNT_TYPE_PERCENTAGE = 1;
+  DISCOUNT_TYPE_FIXED_AMOUNT = 2;
+  DISCOUNT_TYPE_TIER_DISCOUNT = 3;
+  DISCOUNT_TYPE_VOLUME_DISCOUNT = 4;
+}

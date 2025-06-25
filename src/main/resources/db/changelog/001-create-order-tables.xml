@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Create addresses table -->
+    <changeSet id="001-create-addresses-table" author="order-creation-shred">
+        <createTable tableName="addresses">
+            <column name="address_id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="street1" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="street2" type="varchar(255)"/>
+            <column name="city" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="state" type="varchar(100)"/>
+            <column name="postal_code" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="country" type="char(2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <rollback>
+            <dropTable tableName="addresses"/>
+        </rollback>
+    </changeSet>
+
+    <!-- Create orders table -->
+    <changeSet id="002-create-orders-table" author="order-creation-shred">
+        <createTable tableName="orders">
+            <column name="order_id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="order_number" type="varchar(30)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="cart_id" type="varchar(50)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="customer_id" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="order_status" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="order_date" type="timestamp with time zone" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="subtotal_amount" type="decimal(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_amount" type="decimal(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="currency" type="char(3)" defaultValue="USD">
+                <constraints nullable="false"/>
+            </column>
+            <column name="billing_address_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="shipping_address_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="integer" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <rollback>
+            <dropTable tableName="orders"/>
+        </rollback>
+    </changeSet>
+
+    <!-- Create order_items table -->
+    <changeSet id="003-create-order-items-table" author="order-creation-shred">
+        <createTable tableName="order_items">
+            <column name="order_item_id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="order_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="product_id" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantity" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="unit_price" type="decimal(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_price" type="decimal(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="currency" type="char(3)" defaultValue="USD">
+                <constraints nullable="false"/>
+            </column>
+            <column name="item_status" type="varchar(20)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <rollback>
+            <dropTable tableName="order_items"/>
+        </rollback>
+    </changeSet>
+
+    <!-- Create payment_details table -->
+    <changeSet id="004-create-payment-details-table" author="order-creation-shred">
+        <createTable tableName="payment_details">
+            <column name="payment_id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="order_id" type="uuid">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="payment_status" type="varchar(20)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payment_amount" type="decimal(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="currency" type="char(3)" defaultValue="USD">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payment_provider" type="varchar(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payment_method_type" type="varchar(30)"/>
+            <column name="payment_method_details" type="text"/>
+            <column name="transaction_id" type="varchar(100)"/>
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <rollback>
+            <dropTable tableName="payment_details"/>
+        </rollback>
+    </changeSet>
+
+    <!-- Create shipping_details table -->
+    <changeSet id="005-create-shipping-details-table" author="order-creation-shred">
+        <createTable tableName="shipping_details">
+            <column name="shipping_id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="order_id" type="uuid">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="shipping_status" type="varchar(20)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tracking_number" type="varchar(100)"/>
+            <column name="carrier" type="varchar(50)"/>
+            <column name="shipping_method" type="varchar(50)"/>
+            <column name="estimated_delivery_date" type="date"/>
+            <column name="actual_delivery_date" type="date"/>
+            <column name="shipping_cost" type="decimal(12,2)" defaultValue="0.00"/>
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <rollback>
+            <dropTable tableName="shipping_details"/>
+        </rollback>
+    </changeSet>
+
+    <!-- Add foreign key constraints -->
+    <changeSet id="006-add-foreign-keys" author="order-creation-shred">
+        <!-- Orders to Addresses foreign keys -->
+        <addForeignKeyConstraint
+            constraintName="fk_orders_billing_address"
+            baseTableName="orders"
+            baseColumnNames="billing_address_id"
+            referencedTableName="addresses"
+            referencedColumnNames="address_id"
+            onDelete="RESTRICT"/>
+            
+        <addForeignKeyConstraint
+            constraintName="fk_orders_shipping_address"
+            baseTableName="orders"
+            baseColumnNames="shipping_address_id"
+            referencedTableName="addresses"
+            referencedColumnNames="address_id"
+            onDelete="RESTRICT"/>
+            
+        <!-- Order Items to Orders foreign key -->
+        <addForeignKeyConstraint
+            constraintName="fk_order_items_order"
+            baseTableName="order_items"
+            baseColumnNames="order_id"
+            referencedTableName="orders"
+            referencedColumnNames="order_id"
+            onDelete="CASCADE"/>
+            
+        <!-- Payment Details to Orders foreign key -->
+        <addForeignKeyConstraint
+            constraintName="fk_payment_details_order"
+            baseTableName="payment_details"
+            baseColumnNames="order_id"
+            referencedTableName="orders"
+            referencedColumnNames="order_id"
+            onDelete="CASCADE"/>
+            
+        <!-- Shipping Details to Orders foreign key -->
+        <addForeignKeyConstraint
+            constraintName="fk_shipping_details_order"
+            baseTableName="shipping_details"
+            baseColumnNames="order_id"
+            referencedTableName="orders"
+            referencedColumnNames="order_id"
+            onDelete="CASCADE"/>
+            
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="orders" constraintName="fk_orders_billing_address"/>
+            <dropForeignKeyConstraint baseTableName="orders" constraintName="fk_orders_shipping_address"/>
+            <dropForeignKeyConstraint baseTableName="order_items" constraintName="fk_order_items_order"/>
+            <dropForeignKeyConstraint baseTableName="payment_details" constraintName="fk_payment_details_order"/>
+            <dropForeignKeyConstraint baseTableName="shipping_details" constraintName="fk_shipping_details_order"/>
+        </rollback>
+    </changeSet>
+
+    <!-- Create indexes for better performance -->
+    <changeSet id="007-create-indexes" author="order-creation-shred">
+        <createIndex indexName="idx_orders_cart_id" tableName="orders">
+            <column name="cart_id"/>
+        </createIndex>
+        
+        <createIndex indexName="idx_orders_customer_id" tableName="orders">
+            <column name="customer_id"/>
+        </createIndex>
+        
+        <createIndex indexName="idx_orders_status" tableName="orders">
+            <column name="order_status"/>
+        </createIndex>
+        
+        <createIndex indexName="idx_orders_date" tableName="orders">
+            <column name="order_date"/>
+        </createIndex>
+        
+        <createIndex indexName="idx_orders_customer_date" tableName="orders">
+            <column name="customer_id"/>
+            <column name="order_date"/>
+        </createIndex>
+        
+        <createIndex indexName="idx_order_items_order_id" tableName="order_items">
+            <column name="order_id"/>
+        </createIndex>
+        
+        <createIndex indexName="idx_order_items_product_id" tableName="order_items">
+            <column name="product_id"/>
+        </createIndex>
+        
+        <rollback>
+            <dropIndex tableName="orders" indexName="idx_orders_cart_id"/>
+            <dropIndex tableName="orders" indexName="idx_orders_status"/>
+            <dropIndex tableName="orders" indexName="idx_orders_date"/>
+            <dropIndex tableName="orders" indexName="idx_orders_customer_date"/>
+            <dropIndex tableName="order_items" indexName="idx_order_items_order_id"/>
+            <dropIndex tableName="order_items" indexName="idx_order_items_product_id"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
