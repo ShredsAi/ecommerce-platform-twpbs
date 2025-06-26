@@ -1,0 +1,14 @@
+spring:
+  profiles: dev
+  jpa:
+    show-sql: true
+  datasource:
+    url: jdbc:postgresql://localhost:5432/orderdb_dev
+logging:
+  level:
+    root: DEBUG
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

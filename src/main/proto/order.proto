@@ -1,0 +1,57 @@
+syntax = "proto3";
+package order;
+
+service OrderService {
+  rpc GetOrderSnapshot(GetOrderRequest) returns (OrderSnapshot);
+  rpc UpdateOrderStatus(UpdateStatusRequest) returns (UpdateStatusResponse);
+}
+
+message GetOrderRequest {
+  string orderId = 1;
+}
+
+message OrderSnapshot {
+  string orderId = 1;
+  string customerId = 2;
+  string orderStatus = 3;
+  string orderDate = 4;
+  Money totalAmount = 5;
+  repeated OrderItem items = 6;
+  string paymentStatus = 7;
+  string shippingStatus = 8;
+  string deliveryDate = 9;
+}
+
+message OrderItem {
+  string orderItemId = 1;
+  string productId = 2;
+  string productName = 3;
+  int32 quantity = 4;
+  Money unitPrice = 5;
+  Money totalPrice = 6;
+  bool isReturnable = 7;
+}
+
+message Money {
+  string amount = 1;
+  string currency = 2;
+}
+
+message UpdateStatusRequest {
+  string orderId = 1;
+  string newStatus = 2;
+}
+
+message UpdateStatusResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message Address {
+  string street1 = 1;
+  string street2 = 2;
+  string city = 3;
+  string state = 4;
+  string postalCode = 5;
+  string country = 6;
+}
