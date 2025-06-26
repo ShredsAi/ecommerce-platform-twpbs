@@ -1,0 +1,222 @@
+spring:
+  application:
+    name: order-fulfillment-coordination
+  profiles:
+    active: dev
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+# Database Configuration
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/orders
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        show_sql: false
+        jdbc:
+          batch_size: 200
+    show-sql: false
+    open-in-view: false
+
+  # Redis Configuration
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 60000
+    jedis:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      enable-idempotence: true
+      acks: all
+      retries: 3
+      batch-size: 16384
+      linger-ms: 5
+      buffer-memory: 33554432
+    consumer:
+      group-id: order-fulfillment-coordination
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      properties:
+        spring.json.trusted.packages: "ai.shreds.shared.dtos"
+
+  # JMS Configuration (Artemis)
+  artemis:
+    broker-url: tcp://localhost:61616
+    user: artemis
+    password: artemis
+    embedded:
+      enabled: false
+  jms:
+    template:
+      default-destination: order.fulfillment.events
+      delivery-mode: persistent
+      priority: 5
+      time-to-live: 3600000
+
+# gRPC Configuration
+grpc:
+  client:
+    shipping-service:
+      address: static://localhost:9090
+      negotiation-type: plaintext
+      max-inbound-message-size: 4194304
+      max-inbound-metadata-size: 8192
+      keep-alive-time: 30s
+      keep-alive-timeout: 5s
+      keep-alive-without-calls: true
+
+# Resilience4j Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      payment-service:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        wait-duration-in-open-state: 30s
+        failure-rate-threshold: 50
+        record-exceptions:
+          - java.net.ConnectException
+          - java.util.concurrent.TimeoutException
+      shipping-service:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 60
+        wait-duration-in-open-state: 20s
+      inventory-service:
+        register-health-indicator: true
+        sliding-window-size: 8
+        minimum-number-of-calls: 4
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 25s
+
+  retry:
+    instances:
+      payment-service:
+        max-attempts: 3
+        wait-duration: 2s
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - java.net.ConnectException
+          - java.util.concurrent.TimeoutException
+      shipping-service:
+        max-attempts: 3
+        wait-duration: 1s
+        exponential-backoff-multiplier: 2
+      inventory-service:
+        max-attempts: 2
+        wait-duration: 1s
+        exponential-backoff-multiplier: 1.5
+
+  timelimiter:
+    instances:
+      payment-service:
+        timeout-duration: 10s
+      shipping-service:
+        timeout-duration: 8s
+      inventory-service:
+        timeout-duration: 5s
+
+# External Service URLs
+external:
+  services:
+    payment:
+      url: http://localhost:8081
+      timeout: 10s
+      retry-attempts: 3
+    inventory:
+      url: http://localhost:8082
+      timeout: 5s
+      retry-attempts: 2
+    notification:
+      url: http://localhost:8083
+      timeout: 3s
+      retry-attempts: 1
+
+# Saga Configuration
+saga:
+  timeout:
+    default-threshold: PT5M
+    max-retries: 5
+    retry-delay: PT10S
+    exponential-backoff-multiplier: 2
+  scheduler:
+    timeout-scan-interval: PT30S
+    thread-pool-size: 5
+
+# Cache Configuration
+cache:
+  redis:
+    default-ttl: PT5M
+    saga-state-ttl: PT10M
+    idempotency-ttl: PT1H
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info,prometheus,configprops,env
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: always
+    metrics:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+      environment: ${spring.profiles.active}
+
+# Logging Configuration
+logging:
+  level:
+    ai.shreds: INFO
+    org.springframework.kafka: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    io.grpc: WARN
+    org.apache.kafka: WARN
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level [%X{correlationId}] %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{correlationId}] %logger{36} - %msg%n"
+  file:
+    name: logs/order-fulfillment-coordination.log
+    max-size: 100MB
+    max-history: 10

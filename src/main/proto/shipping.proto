@@ -1,0 +1,145 @@
+syntax = "proto3";
+
+package shipping.v1;
+
+option java_multiple_files = true;
+option java_package = "ai.shreds.infrastructure.external_services.grpc";
+option java_outer_classname = "ShippingServiceProto";
+
+service ShippingService {
+  // Create a new shipment for an order
+  rpc CreateShipment(CreateShipmentRequest) returns (CreateShipmentResponse);
+  
+  // Stream shipping status updates back to the client
+  rpc StreamShippingUpdates(Empty) returns (stream ShippingUpdate);
+  
+  // Cancel a shipment by tracking number
+  rpc CancelShipment(CancelShipmentRequest) returns (CancelShipmentResponse);
+  
+  // Get detailed shipping information by tracking number
+  rpc GetShipmentDetails(GetShipmentDetailsRequest) returns (ShipmentDetails);
+}
+
+// Empty message for stream initialization
+message Empty {}
+
+// Create shipment request message
+message CreateShipmentRequest {
+  string order_id = 1;
+  repeated Item items = 2;
+  Address shipping_address = 3;
+  bool expedited = 4;
+}
+
+// Shipping item message
+message Item {
+  string order_item_id = 1;
+  string product_id = 2;
+  int32 quantity = 3;
+  string name = 4;
+  float weight = 5;
+  Dimensions dimensions = 6;
+}
+
+// Dimensions message
+message Dimensions {
+  float length = 1;
+  float width = 2;
+  float height = 3;
+  string unit = 4; // cm, in, etc.
+}
+
+// Address message
+message Address {
+  string street1 = 1;
+  string street2 = 2;
+  string city = 3;
+  string state = 4;
+  string postal_code = 5;
+  string country = 6;
+}
+
+// Create shipment response message
+message CreateShipmentResponse {
+  string tracking_number = 1;
+  string carrier = 2;
+  string estimated_delivery_date = 3;
+  ShippingCost shipping_cost = 4;
+  string label_url = 5;
+  bool success = 6;
+  ErrorResponse error = 7;
+}
+
+// Shipping cost message
+message ShippingCost {
+  float value = 1;
+  string currency = 2;
+}
+
+// Error response message
+message ErrorResponse {
+  string error_code = 1;
+  string error_message = 2;
+}
+
+// Shipping update message for streaming updates
+message ShippingUpdate {
+  string tracking_number = 1;
+  string order_id = 2;
+  string status = 3;
+  string carrier = 4;
+  string location = 5;
+  string timestamp = 6;
+  string estimated_delivery_date = 7;
+  string actual_delivery_date = 8;
+  string message = 9;
+}
+
+// Cancel shipment request
+message CancelShipmentRequest {
+  string tracking_number = 1;
+  string order_id = 2;
+  string reason = 3;
+}
+
+// Cancel shipment response
+message CancelShipmentResponse {
+  bool success = 1;
+  string status = 2;
+  string message = 3;
+  float refund_amount = 4;
+  string refund_currency = 5;
+  ErrorResponse error = 6;
+}
+
+// Get shipment details request
+message GetShipmentDetailsRequest {
+  string tracking_number = 1;
+  string order_id = 2;
+}
+
+// Detailed shipment information
+message ShipmentDetails {
+  string tracking_number = 1;
+  string order_id = 2;
+  string status = 3;
+  string carrier = 4;
+  string shipping_method = 5;
+  string estimated_delivery_date = 6;
+  string actual_delivery_date = 7;
+  Address shipping_address = 8;
+  repeated ShipmentEvent events = 9;
+  ShippingCost shipping_cost = 10;
+  bool expedited = 11;
+  string label_url = 12;
+  string created_at = 13;
+  string updated_at = 14;
+}
+
+// Shipment tracking event
+message ShipmentEvent {
+  string timestamp = 1;
+  string location = 2;
+  string status = 3;
+  string message = 4;
+}
