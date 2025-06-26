@@ -8,6 +8,10 @@ import ai.shreds.application.ports.ApplicationInventoryServiceOutputPort;
 import ai.shreds.application.ports.ApplicationPaymentServiceOutputPort;
 import ai.shreds.application.ports.ApplicationNotificationOutputPort;
 import ai.shreds.domain.entities.DomainCancellationRequestEntity;
+import ai.shreds.domain.exceptions.DomainCancellationNotAllowedException;
+import ai.shreds.domain.exceptions.DomainReturnNotAllowedException;
+import ai.shreds.domain.exceptions.DomainBusinessRuleViolationException;
+import ai.shreds.domain.exceptions.DomainInvalidStateTransitionException;
 import ai.shreds.domain.ports.DomainInputPortCancellationService;
 import ai.shreds.domain.ports.DomainOutputPortCancellationRepository;
 import ai.shreds.domain.ports.DomainOutputPortOrderRepository;
@@ -108,6 +112,11 @@ public class ApplicationCancellationService implements ApplicationCancellationIn
             return mapToResponse(cancellation);
             
         } catch (ApplicationTransactionalException | ApplicationSagaException ex) {
+            throw ex;
+        } catch (DomainCancellationNotAllowedException | DomainReturnNotAllowedException | 
+                 DomainBusinessRuleViolationException | DomainInvalidStateTransitionException ex) {
+            // Let domain exceptions bubble up to be handled by the exception handler
+            log.warn("Domain exception for cancellation request on order {}: {}", params.orderId(), ex.getMessage());
             throw ex;
         } catch (Exception ex) {
             log.error("Unexpected error processing cancellation request for order: {}", params.orderId(), ex);

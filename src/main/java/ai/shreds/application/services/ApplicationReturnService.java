@@ -17,6 +17,7 @@ import ai.shreds.shared.value_objects.SharedReturnItemParams;
 import ai.shreds.shared.dtos.SharedReturnResponseDTO;
 import ai.shreds.shared.dtos.SharedReturnRequestDTO;
 import ai.shreds.shared.dtos.SharedOrderSnapshotDTO;
+import ai.shreds.shared.dtos.SharedOrderItemDTO;
 import ai.shreds.shared.dtos.SharedRefundRequestDTO;
 import ai.shreds.shared.dtos.SharedNotificationDTO;
 import ai.shreds.shared.dtos.SharedDomainEventDTO;
@@ -84,7 +85,7 @@ public class ApplicationReturnService implements ApplicationReturnInputPort {
             
             // Convert params to domain entities
             List<DomainReturnItemEntity> items = params.items().stream()
-                    .map(this::convertToDomainItem)
+                    .map(itemParam -> convertToDomainItem(itemParam, snapshot))
                     .collect(Collectors.toList());
             
             // Request return through domain service
@@ -199,14 +200,23 @@ public class ApplicationReturnService implements ApplicationReturnInputPort {
         }
     }
 
-    private DomainReturnItemEntity convertToDomainItem(SharedReturnItemParams params) {
-        DomainReturnItemEntity item = new DomainReturnItemEntity();
-        item.setOrderItemId(params.orderItemId());
-        item.setQuantity(params.quantity());
-        item.setReturnReason(params.reason());
-        item.setCondition(params.condition());
-        // Product ID and refund amount would be resolved from order item
-        return item;
+    private DomainReturnItemEntity convertToDomainItem(SharedReturnItemParams params, SharedOrderSnapshotDTO snapshot) {
+        // Find the product ID from the order snapshot
+        String productId = snapshot.getItems().stream()
+                .filter(item -> item.getOrderItemId().equals(params.orderItemId()))
+                .map(SharedOrderItemDTO::getProductId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                    "Order item not found: " + params.orderItemId()));
+        
+        // Use the public constructor to create the entity
+        return new DomainReturnItemEntity(
+                params.orderItemId(),
+                productId,
+                params.quantity(),
+                params.reason(),
+                params.condition()
+        );
     }
 
     private void coordinateInventoryUpdate(DomainReturnRequestEntity returnEntity) {

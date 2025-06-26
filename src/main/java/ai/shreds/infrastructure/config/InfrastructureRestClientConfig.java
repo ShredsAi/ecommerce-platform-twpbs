@@ -20,7 +20,7 @@ public class InfrastructureRestClientConfig {
 
     @Bean
     public RestTemplate restTemplate() {
-        return configureTimeouts(new RestTemplateBuilder()).build();
+        return configureTimeouts(new RestTemplateBuilder());
     }
 
     @Bean
@@ -41,14 +41,11 @@ public class InfrastructureRestClientConfig {
     }
 
     private RestTemplate configureTimeouts(RestTemplateBuilder builder) {
-        HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
-        factory.setConnectTimeout(5000); // 5 seconds
-        factory.setConnectionRequestTimeout(3000); // 3 seconds
-        
+        // Use RestTemplateBuilder timeout configuration instead of directly setting on factory
+        // This approach is compatible with Spring Boot 3.x
         return builder
-                .requestFactory(() -> factory)
-                .connectTimeout(Duration.ofSeconds(5))
-                .readTimeout(Duration.ofSeconds(30))
+                .setConnectTimeout(Duration.ofSeconds(5))
+                .setReadTimeout(Duration.ofSeconds(30))
                 .build();
     }
 

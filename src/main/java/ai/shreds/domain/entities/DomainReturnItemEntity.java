@@ -3,8 +3,10 @@ package ai.shreds.domain.entities;
 import ai.shreds.shared.value_objects.SharedMoneyValue;
 import ai.shreds.shared.dtos.SharedReturnItemDTO;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Objects;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
  * Domain entity representing a return item within a return request.
@@ -64,25 +66,36 @@ public class DomainReturnItemEntity {
     
     /**
      * Business logic to calculate refund amount based on item condition and reason.
+     * Uses BigDecimal arithmetic to maintain precision and avoid floating-point errors.
      */
     public void calculateRefundAmount(SharedMoneyValue originalPrice, double restockingFeeRate) {
         if (originalPrice == null) {
             throw new IllegalArgumentException("Original price cannot be null");
         }
         
-        double baseRefund = originalPrice.amount().doubleValue() * quantity;
+        // Use BigDecimal arithmetic throughout to maintain precision
+        BigDecimal unitPrice = originalPrice.amount();
+        BigDecimal quantityDecimal = BigDecimal.valueOf(quantity);
+        BigDecimal baseRefund = unitPrice.multiply(quantityDecimal);
         
         // Apply restocking fee based on condition and reason
-        double restockingFee = 0.0;
+        BigDecimal restockingFee = BigDecimal.ZERO;
         if (shouldApplyRestockingFee()) {
-            restockingFee = baseRefund * restockingFeeRate;
+            BigDecimal restockingRate = BigDecimal.valueOf(restockingFeeRate);
+            restockingFee = baseRefund.multiply(restockingRate);
         }
         
-        double finalRefund = baseRefund - restockingFee;
-        this.refundAmount = new SharedMoneyValue(
-            java.math.BigDecimal.valueOf(Math.max(0, finalRefund)), 
-            originalPrice.currency()
-        );
+        BigDecimal finalRefund = baseRefund.subtract(restockingFee);
+        
+        // Ensure non-negative amount and round to 2 decimal places
+        if (finalRefund.compareTo(BigDecimal.ZERO) < 0) {
+            finalRefund = BigDecimal.ZERO;
+        }
+        
+        // Round to 2 decimal places to ensure SharedMoneyValue validation passes
+        finalRefund = finalRefund.setScale(2, RoundingMode.HALF_UP);
+        
+        this.refundAmount = new SharedMoneyValue(finalRefund, originalPrice.currency());
     }
     
     /**

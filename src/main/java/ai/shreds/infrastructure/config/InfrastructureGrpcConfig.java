@@ -1,6 +1,6 @@
 package ai.shreds.infrastructure.config;
 
-import com.ordermanagement.order.OrderServiceGrpc;
+import order.OrderServiceGrpc;
 import inventory.InventoryServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;

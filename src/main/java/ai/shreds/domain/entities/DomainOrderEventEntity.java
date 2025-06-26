@@ -2,7 +2,7 @@ package ai.shreds.domain.entities;
 
 import ai.shreds.shared.dtos.SharedDomainEventDTO;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;

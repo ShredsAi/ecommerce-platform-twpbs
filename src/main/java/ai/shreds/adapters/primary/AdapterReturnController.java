@@ -40,7 +40,7 @@ public class AdapterReturnController {
             
             SharedReturnResponseDTO response = returnService.requestReturn(params);
             log.info("Return request processed successfully for order: {}, return ID: {}", 
-                    params.orderId(), response.returnId());
+                    params.orderId(), response.getReturnId());
             
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception ex) {

@@ -20,7 +20,7 @@ public class AdapterOrderEventJmsListener {
     public void handleOrderEvent(SharedOrderEventMessage message) {
         
         log.info("Received order event message: {} for order: {}, event type: {}", 
-                message.eventId(), message.orderId(), message.eventType());
+                message.getEventId(), message.getOrderId(), message.getEventType());
         
         try {
             // Validate message
@@ -28,18 +28,18 @@ public class AdapterOrderEventJmsListener {
                 throw new AdapterMessageProcessingException("Received null order event message");
             }
             
-            if (message.orderId() == null || message.orderId().trim().isEmpty()) {
+            if (message.getOrderId() == null || message.getOrderId().trim().isEmpty()) {
                 throw new AdapterMessageProcessingException(
                     "Order ID is missing in order event message", 
-                    message.eventId(), 
+                    message.getEventId(), 
                     "OrderEvent"
                 );
             }
             
-            if (message.eventType() == null || message.eventType().trim().isEmpty()) {
+            if (message.getEventType() == null || message.getEventType().trim().isEmpty()) {
                 throw new AdapterMessageProcessingException(
                     "Event type is missing in order event message", 
-                    message.eventId(), 
+                    message.getEventId(), 
                     "OrderEvent"
                 );
             }
@@ -48,18 +48,18 @@ public class AdapterOrderEventJmsListener {
             orderEventService.handleOrderEvent(message);
             
             log.info("Successfully processed order event message: {} for order: {}, event type: {}", 
-                    message.eventId(), message.orderId(), message.eventType());
+                    message.getEventId(), message.getOrderId(), message.getEventType());
                     
         } catch (AdapterMessageProcessingException ex) {
             log.error("Message processing validation error for order event message: {}", 
-                    message != null ? message.eventId() : "unknown", ex);
+                    message != null ? message.getEventId() : "unknown", ex);
             throw ex;
         } catch (Exception ex) {
             log.error("Unexpected error processing order event message: {}", 
-                    message != null ? message.eventId() : "unknown", ex);
+                    message != null ? message.getEventId() : "unknown", ex);
             throw new AdapterMessageProcessingException(
                 "Failed to process order event message", 
-                message != null ? message.eventId() : null, 
+                message != null ? message.getEventId() : null, 
                 "OrderEvent", 
                 "orderEventQueue", 
                 ex

@@ -20,7 +20,7 @@ public class AdapterSystemCancellationJmsListener {
     public void handleSystemCancellation(SharedSystemCancellationMessage message) {
         
         log.info("Received system cancellation message: {} for order: {}", 
-                message.messageId(), message.orderId());
+                message.getMessageId(), message.getOrderId());
         
         try {
             // Validate message
@@ -28,10 +28,10 @@ public class AdapterSystemCancellationJmsListener {
                 throw new AdapterMessageProcessingException("Received null system cancellation message");
             }
             
-            if (message.orderId() == null || message.orderId().trim().isEmpty()) {
+            if (message.getOrderId() == null || message.getOrderId().trim().isEmpty()) {
                 throw new AdapterMessageProcessingException(
                     "Order ID is missing in system cancellation message", 
-                    message.messageId(), 
+                    message.getMessageId(), 
                     "SystemCancellation"
                 );
             }
@@ -40,18 +40,18 @@ public class AdapterSystemCancellationJmsListener {
             cancellationService.processSystemCancellation(message);
             
             log.info("Successfully processed system cancellation message: {} for order: {}", 
-                    message.messageId(), message.orderId());
+                    message.getMessageId(), message.getOrderId());
                     
         } catch (AdapterMessageProcessingException ex) {
             log.error("Message processing validation error for message: {}", 
-                    message != null ? message.messageId() : "unknown", ex);
+                    message != null ? message.getMessageId() : "unknown", ex);
             throw ex;
         } catch (Exception ex) {
             log.error("Unexpected error processing system cancellation message: {}", 
-                    message != null ? message.messageId() : "unknown", ex);
+                    message != null ? message.getMessageId() : "unknown", ex);
             throw new AdapterMessageProcessingException(
                 "Failed to process system cancellation message", 
-                message != null ? message.messageId() : null, 
+                message != null ? message.getMessageId() : null, 
                 "SystemCancellation", 
                 "systemCancellationQueue", 
                 ex

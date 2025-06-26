@@ -3,7 +3,7 @@ package ai.shreds.domain.entities;
 import ai.shreds.shared.value_objects.SharedMoneyValue;
 import ai.shreds.shared.dtos.SharedRefundRequestDTO;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;

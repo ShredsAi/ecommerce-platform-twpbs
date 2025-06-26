@@ -122,7 +122,7 @@ public class ApplicationSchedulerService implements ApplicationSchedulerInputPor
             List<SharedReturnStatusEnum> statusesToCheck = List.of(
                 SharedReturnStatusEnum.REQUESTED,
                 SharedReturnStatusEnum.APPROVED,
-                SharedReturnStatusEnum.IN_TRANIST,
+                SharedReturnStatusEnum.IN_TRANSIT,
                 SharedReturnStatusEnum.RECEIVED
             );
             

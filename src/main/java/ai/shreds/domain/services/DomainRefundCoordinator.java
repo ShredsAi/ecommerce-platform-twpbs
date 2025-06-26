@@ -142,7 +142,7 @@ public class DomainRefundCoordinator {
      * Calculate refund amount for specific items in a return.
      * 
      * @param orderSnapshot the original order
-     * @param returnedItems the items being returned
+     * @param returnedItemIds the item IDs being returned
      * @param returnReason the reason for return
      * @return the calculated refund amount
      */
@@ -152,7 +152,7 @@ public class DomainRefundCoordinator {
         String returnReason
     ) {
         Objects.requireNonNull(orderSnapshot, "Order snapshot cannot be null");
-        Objects.requireNonNull(returnedItems, "Returned items cannot be null");
+        Objects.requireNonNull(returnedItemIds, "Returned item IDs cannot be null");
         Objects.requireNonNull(returnReason, "Return reason cannot be null");
         
         BigDecimal totalRefund = BigDecimal.ZERO;

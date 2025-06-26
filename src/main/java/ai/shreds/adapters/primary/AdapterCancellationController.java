@@ -35,7 +35,7 @@ public class AdapterCancellationController {
             
             SharedCancellationResponseDTO response = cancellationService.requestCancellation(params);
             log.info("Cancellation request processed successfully for order: {}, cancellation ID: {}", 
-                    params.orderId(), response.cancellationId());
+                    params.orderId(), response.getCancellationId());
             
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception ex) {

@@ -5,7 +5,7 @@ import ai.shreds.shared.enums.SharedCancellationStatusEnum;
 import ai.shreds.shared.value_objects.SharedMoneyValue;
 import ai.shreds.shared.dtos.SharedCancellationRequestDTO;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Objects;
 

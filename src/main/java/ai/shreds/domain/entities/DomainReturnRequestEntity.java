@@ -6,7 +6,7 @@ import ai.shreds.shared.value_objects.SharedMoneyValue;
 import ai.shreds.shared.value_objects.SharedAddressValue;
 import ai.shreds.shared.dtos.SharedReturnRequestDTO;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -173,9 +173,9 @@ public class DomainReturnRequestEntity {
                 return newStatus == SharedReturnStatusEnum.APPROVED || 
                        newStatus == SharedReturnStatusEnum.REJECTED;
             case APPROVED:
-                return newStatus == SharedReturnStatusEnum.IN_TRANIST || 
+                return newStatus == SharedReturnStatusEnum.IN_TRANSIT || 
                        newStatus == SharedReturnStatusEnum.REJECTED;
-            case IN_TRANIST:
+            case IN_TRANSIT:
                 return newStatus == SharedReturnStatusEnum.RECEIVED;
             case RECEIVED:
                 return newStatus == SharedReturnStatusEnum.PROCESSING;
@@ -229,7 +229,7 @@ public class DomainReturnRequestEntity {
     public boolean canBeProcessed() {
         return this.status == SharedReturnStatusEnum.REQUESTED || 
                this.status == SharedReturnStatusEnum.APPROVED || 
-               this.status == SharedReturnStatusEnum.IN_TRANIST || 
+               this.status == SharedReturnStatusEnum.IN_TRANSIT || 
                this.status == SharedReturnStatusEnum.RECEIVED || 
                this.status == SharedReturnStatusEnum.PROCESSING;
     }

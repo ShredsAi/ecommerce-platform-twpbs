@@ -7,6 +7,7 @@ import ai.shreds.shared.enums.SharedCancellationReasonEnum;
 import ai.shreds.shared.dtos.SharedOrderSnapshotDTO;
 import ai.shreds.shared.dtos.SharedOrderItemDTO;
 
+import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -15,6 +16,7 @@ import java.util.Objects;
  * Domain service implementing eligibility checking business logic.
  * Contains business rules for determining cancellation and return eligibility.
  */
+@Service
 public class DomainEligibilityChecker implements DomainInputPortEligibilityChecker {
     
     private final DomainCancellationWindowValue cancellationWindow;

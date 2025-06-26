@@ -8,11 +8,11 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.stereotype.Service;
 
 import inventory.InventoryServiceGrpc;
-import inventory.InventoryServiceOuterClass.CheckStockRequest;
-import inventory.InventoryServiceOuterClass.CheckStockResponse;
-import inventory.InventoryServiceOuterClass.ReleaseStockRequest;
-import inventory.InventoryServiceOuterClass.StockItem;
-import inventory.InventoryServiceOuterClass.IncrementStockRequest;
+import inventory.Inventory.CheckStockRequest;
+import inventory.Inventory.CheckStockResponse;
+import inventory.Inventory.ReleaseStockRequest;
+import inventory.Inventory.StockItem;
+import inventory.Inventory.IncrementStockRequest;
 
 import java.util.stream.Collectors;
 import java.util.List;

@@ -4,6 +4,7 @@ import ai.shreds.domain.entities.DomainOrderEventEntity;
 import ai.shreds.domain.ports.DomainOutputPortOrderEventRepository;
 import ai.shreds.domain.ports.DomainOutputPortOrderRepository;
 
+import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import java.util.UUID;
  * Domain service for managing order events.
  * Handles the creation, persistence, and processing of order-related events.
  */
+@Service
 public class DomainOrderEventService {
     
     private final DomainOutputPortOrderEventRepository eventRepository;

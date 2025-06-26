@@ -20,7 +20,7 @@ public class AdapterOrderCancelledEventListener {
     public void handleOrderCancelledEvent(SharedOrderEventMessage event) {
         
         log.info("Received order cancelled event: {} for order: {}", 
-                event.eventId(), event.orderId());
+                event.getEventId(), event.getOrderId());
         
         try {
             // Validate event
@@ -28,35 +28,35 @@ public class AdapterOrderCancelledEventListener {
                 throw new AdapterMessageProcessingException("Received null order cancelled event");
             }
             
-            if (event.orderId() == null || event.orderId().trim().isEmpty()) {
+            if (event.getOrderId() == null || event.getOrderId().trim().isEmpty()) {
                 throw new AdapterMessageProcessingException(
                     "Order ID is missing in order cancelled event", 
-                    event.eventId(), 
+                    event.getEventId(), 
                     "OrderCancelled"
                 );
             }
             
-            if (!"ORDER_CANCELLED".equals(event.eventType()) && !"CANCELLED".equals(event.newStatus())) {
+            if (!"ORDER_CANCELLED".equals(event.getEventType()) && !"CANCELLED".equals(event.getNewStatus())) {
                 log.debug("Ignoring non-cancellation event: {} with type: {} and status: {}", 
-                    event.eventId(), event.eventType(), event.newStatus());
+                    event.getEventId(), event.getEventType(), event.getNewStatus());
                 return;
             }
             
             // Check if this is an external cancellation that needs to be recorded
-            if (event.payload() != null && event.payload().containsKey("source")) {
-                String source = (String) event.payload().get("source");
+            if (event.getPayload() != null && event.getPayload().containsKey("source")) {
+                String source = (String) event.getPayload().get("source");
                 if ("EXTERNAL_SYSTEM".equals(source) || "FRAUD_DETECTION".equals(source)) {
                     log.info("Processing external cancellation from source: {} for order: {}", 
-                            source, event.orderId());
+                            source, event.getOrderId());
                     
                     // Create system cancellation message
                     var systemMessage = new ai.shreds.shared.dtos.SharedSystemCancellationMessage(
-                        event.eventId(),
-                        event.orderId(),
-                        (String) event.payload().getOrDefault("reason", "SYSTEM_CANCELLATION"),
+                        event.getEventId(),
+                        event.getOrderId(),
+                        (String) event.getPayload().getOrDefault("reason", "SYSTEM_CANCELLATION"),
                         source,
-                        event.timestamp(),
-                        event.payload()
+                        event.getTimestamp(),
+                        event.getPayload()
                     );
                     
                     cancellationService.processSystemCancellation(systemMessage);
@@ -64,18 +64,18 @@ public class AdapterOrderCancelledEventListener {
             }
             
             log.info("Successfully processed order cancelled event: {} for order: {}", 
-                    event.eventId(), event.orderId());
+                    event.getEventId(), event.getOrderId());
                     
         } catch (AdapterMessageProcessingException ex) {
             log.error("Message processing validation error for order cancelled event: {}", 
-                    event != null ? event.eventId() : "unknown", ex);
+                    event != null ? event.getEventId() : "unknown", ex);
             throw ex;
         } catch (Exception ex) {
             log.error("Unexpected error processing order cancelled event: {}", 
-                    event != null ? event.eventId() : "unknown", ex);
+                    event != null ? event.getEventId() : "unknown", ex);
             throw new AdapterMessageProcessingException(
                 "Failed to process order cancelled event", 
-                event != null ? event.eventId() : null, 
+                event != null ? event.getEventId() : null, 
                 "OrderCancelled", 
                 "SpringApplicationEvent", 
                 ex

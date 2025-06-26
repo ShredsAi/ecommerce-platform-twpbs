@@ -27,27 +27,27 @@ public class AdapterPaymentWebhookController {
             @Valid @RequestBody SharedRefundRequestDTO refundData,
             @RequestHeader(value = "X-Webhook-Signature", required = false) String signature) {
         
-        log.info("Received refund completed webhook for refund ID: {}", refundData.refundId());
+        log.info("Received refund completed webhook for refund ID: {}", refundData.getRefundId());
         
         try {
             // Validate webhook signature if provided
             if (signature == null || signature.trim().isEmpty()) {
-                log.warn("Webhook signature missing for refund: {}", refundData.refundId());
+                log.warn("Webhook signature missing for refund: {}", refundData.getRefundId());
             }
             
             // Validate refund data
-            if (refundData.refundId() == null || refundData.refundId().trim().isEmpty()) {
-                throw new AdapterValidationException("Refund ID is required", "refundId", refundData.refundId());
+            if (refundData.getRefundId() == null || refundData.getRefundId().trim().isEmpty()) {
+                throw new AdapterValidationException("Refund ID is required", "refundId", refundData.getRefundId());
             }
             
             // Process refund completion based on the source
-            if (refundData.cancellationId() != null && !refundData.cancellationId().trim().isEmpty()) {
-                log.info("Processing refund completion for cancellation: {}", refundData.cancellationId());
-                cancellationService.completeCancellation(refundData.cancellationId());
-            } else if (refundData.returnId() != null && !refundData.returnId().trim().isEmpty()) {
-                log.info("Processing refund completion for return: {}", refundData.returnId());
+            if (refundData.getCancellationId() != null && !refundData.getCancellationId().trim().isEmpty()) {
+                log.info("Processing refund completion for cancellation: {}", refundData.getCancellationId());
+                cancellationService.completeCancellation(refundData.getCancellationId());
+            } else if (refundData.getReturnId() != null && !refundData.getReturnId().trim().isEmpty()) {
+                log.info("Processing refund completion for return: {}", refundData.getReturnId());
                 // Update return status to indicate refund completed
-                returnService.updateReturnStatus(refundData.returnId(), 
+                returnService.updateReturnStatus(refundData.getReturnId(), 
                     ai.shreds.shared.enums.SharedReturnStatusEnum.REFUNDED);
             } else {
                 throw new AdapterValidationException(
@@ -55,17 +55,17 @@ public class AdapterPaymentWebhookController {
                     "source", "missing");
             }
             
-            log.info("Successfully processed refund completion webhook for refund: {}", refundData.refundId());
+            log.info("Successfully processed refund completion webhook for refund: {}", refundData.getRefundId());
             return ResponseEntity.ok().build();
             
         } catch (AdapterValidationException ex) {
-            log.error("Validation error processing refund webhook: {}", refundData.refundId(), ex);
+            log.error("Validation error processing refund webhook: {}", refundData.getRefundId(), ex);
             throw ex;
         } catch (Exception ex) {
-            log.error("Unexpected error processing refund webhook: {}", refundData.refundId(), ex);
+            log.error("Unexpected error processing refund webhook: {}", refundData.getRefundId(), ex);
             throw new AdapterMessageProcessingException(
                 "Failed to process refund completion webhook", 
-                refundData.refundId(), 
+                refundData.getRefundId(), 
                 "RefundWebhook", 
                 "/api/webhooks/payment/refund/completed", 
                 ex);
@@ -77,17 +77,17 @@ public class AdapterPaymentWebhookController {
             @Valid @RequestBody SharedRefundRequestDTO refundData,
             @RequestHeader(value = "X-Webhook-Signature", required = false) String signature) {
         
-        log.warn("Received refund failed webhook for refund ID: {}", refundData.refundId());
+        log.warn("Received refund failed webhook for refund ID: {}", refundData.getRefundId());
         
         try {
             // Validate refund data
-            if (refundData.refundId() == null || refundData.refundId().trim().isEmpty()) {
-                throw new AdapterValidationException("Refund ID is required", "refundId", refundData.refundId());
+            if (refundData.getRefundId() == null || refundData.getRefundId().trim().isEmpty()) {
+                throw new AdapterValidationException("Refund ID is required", "refundId", refundData.getRefundId());
             }
             
             // Log the failure for manual review and potential retry
             log.error("Refund failed for ID: {}, cancellation: {}, return: {}", 
-                refundData.refundId(), refundData.cancellationId(), refundData.returnId());
+                refundData.getRefundId(), refundData.getCancellationId(), refundData.getReturnId());
             
             // Here you might want to trigger compensation logic or manual review process
             // For now, we just acknowledge receipt
@@ -95,10 +95,10 @@ public class AdapterPaymentWebhookController {
             return ResponseEntity.ok().build();
             
         } catch (Exception ex) {
-            log.error("Error processing refund failure webhook: {}", refundData.refundId(), ex);
+            log.error("Error processing refund failure webhook: {}", refundData.getRefundId(), ex);
             throw new AdapterMessageProcessingException(
                 "Failed to process refund failure webhook", 
-                refundData.refundId(), 
+                refundData.getRefundId(), 
                 "RefundWebhook", 
                 "/api/webhooks/payment/refund/failed", 
                 ex);

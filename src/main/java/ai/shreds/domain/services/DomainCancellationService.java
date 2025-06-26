@@ -12,6 +12,7 @@ import ai.shreds.shared.value_objects.SharedMoneyValue;
 import ai.shreds.domain.exceptions.DomainCancellationNotAllowedException;
 import ai.shreds.domain.exceptions.DomainBusinessRuleViolationException;
 
+import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.UUID;
 import java.util.Objects;
@@ -20,6 +21,7 @@ import java.util.Objects;
  * Domain service implementing cancellation business logic.
  * Implements the DomainInputPortCancellationService and orchestrates cancellation operations.
  */
+@Service
 public class DomainCancellationService implements DomainInputPortCancellationService {
     
     private final DomainOutputPortCancellationRepository cancellationRepository;

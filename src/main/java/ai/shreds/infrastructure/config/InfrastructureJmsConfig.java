@@ -5,12 +5,13 @@ import org.apache.activemq.jms.pool.PooledConnectionFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import javax.jms.ConnectionFactory;
+import jakarta.jms.ConnectionFactory;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 import org.springframework.jms.core.JmsTemplate;
 
 /**
  * Configuration for JMS (ActiveMQ) connectivity.
+ * Using Jakarta JMS API for Spring Boot 3 compatibility.
  */
 @Configuration
 public class InfrastructureJmsConfig {
@@ -21,7 +22,7 @@ public class InfrastructureJmsConfig {
     @Bean
     public ConnectionFactory connectionFactory() {
         ActiveMQConnectionFactory activeMQConnectionFactory = new ActiveMQConnectionFactory(brokerUrl);
-        return configureConnectionPool(activeMQConnectionFactory);
+        return activeMQConnectionFactory;
     }
 
     @Bean
@@ -35,11 +36,5 @@ public class InfrastructureJmsConfig {
         factory.setConnectionFactory(connectionFactory);
         factory.setConcurrency("1-1");
         return factory;
-    }
-
-    private ConnectionFactory configureConnectionPool(ConnectionFactory factory) {
-        PooledConnectionFactory pooledFactory = new PooledConnectionFactory();
-        pooledFactory.setConnectionFactory(factory);
-        return pooledFactory;
     }
 }

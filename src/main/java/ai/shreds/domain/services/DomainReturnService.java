@@ -15,6 +15,7 @@ import ai.shreds.shared.value_objects.SharedAddressValue;
 import ai.shreds.domain.exceptions.DomainReturnNotAllowedException;
 import ai.shreds.domain.exceptions.DomainBusinessRuleViolationException;
 
+import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.UUID;
 import java.util.Objects;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
  * Domain service implementing return business logic.
  * Implements the DomainInputPortReturnService and orchestrates return operations.
  */
+@Service
 public class DomainReturnService implements DomainInputPortReturnService {
     
     private final DomainOutputPortReturnRepository returnRepository;
@@ -96,8 +98,17 @@ public class DomainReturnService implements DomainInputPortReturnService {
             returnAddress
         );
         
-        // Add items to return request
+        // Calculate refund amounts for items and add them to return request
+        Map<String, SharedOrderItemDTO> orderItemsMap = orderSnapshot.getItems().stream()
+            .collect(Collectors.toMap(SharedOrderItemDTO::getOrderItemId, item -> item));
+            
         for (DomainReturnItemEntity item : items) {
+            SharedOrderItemDTO orderItem = orderItemsMap.get(item.getOrderItemId());
+            if (orderItem != null) {
+                // Calculate refund amount for the item based on its unit price
+                // Using 10% restocking fee rate as default
+                item.calculateRefundAmount(orderItem.getUnitPrice(), 0.10);
+            }
             returnRequest.addItem(item);
         }
         

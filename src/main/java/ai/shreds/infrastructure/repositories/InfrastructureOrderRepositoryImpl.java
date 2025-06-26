@@ -8,8 +8,8 @@ import ai.shreds.infrastructure.exceptions.InfrastructureExternalServiceExceptio
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.stereotype.Repository;
 
-import com.ordermanagement.order.OrderServiceGrpc;
-import com.ordermanagement.order.OrderServiceOuterClass;
+import order.OrderServiceGrpc;
+import order.Order;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -34,10 +34,10 @@ public class InfrastructureOrderRepositoryImpl implements DomainOutputPortOrderR
     @CircuitBreaker(name = "order-service", fallbackMethod = "fallbackFindOrderSnapshot")
     public SharedOrderSnapshotDTO findOrderSnapshot(String orderId) {
         try {
-            OrderServiceOuterClass.GetOrderRequest request = OrderServiceOuterClass.GetOrderRequest.newBuilder()
+            Order.GetOrderRequest request = Order.GetOrderRequest.newBuilder()
                     .setOrderId(orderId)
                     .build();
-            OrderServiceOuterClass.OrderSnapshot response = grpcStub.getOrderSnapshot(request);
+            Order.OrderSnapshot response = grpcStub.getOrderSnapshot(request);
             return mapGrpcSnapshot(response);
         } catch (Exception ex) {
             throw new InfrastructureExternalServiceException("OrderService", ex.getMessage(), ex);
@@ -48,7 +48,7 @@ public class InfrastructureOrderRepositoryImpl implements DomainOutputPortOrderR
     @CircuitBreaker(name = "order-service", fallbackMethod = "fallbackUpdateOrderStatus")
     public void updateOrderStatus(String orderId, String newStatus) {
         try {
-            OrderServiceOuterClass.UpdateStatusRequest request = OrderServiceOuterClass.UpdateStatusRequest.newBuilder()
+            Order.UpdateStatusRequest request = Order.UpdateStatusRequest.newBuilder()
                     .setOrderId(orderId)
                     .setNewStatus(newStatus)
                     .build();
@@ -58,30 +58,37 @@ public class InfrastructureOrderRepositoryImpl implements DomainOutputPortOrderR
         }
     }
 
-    private SharedOrderSnapshotDTO mapGrpcSnapshot(OrderServiceOuterClass.OrderSnapshot response) {
+    public SharedOrderSnapshotDTO mapGrpcSnapshot(Order.OrderSnapshot response) {
         SharedOrderSnapshotDTO dto = new SharedOrderSnapshotDTO();
         dto.setOrderId(response.getOrderId());
         dto.setCustomerId(response.getCustomerId());
         dto.setOrderStatus(response.getOrderStatus());
         
-        // Convert timestamp to LocalDateTime
-        if (response.hasOrderDate()) {
-            dto.setOrderDate(LocalDateTime.ofInstant(
-                Instant.ofEpochSecond(response.getOrderDate().getSeconds()),
-                ZoneId.systemDefault()));
+        // Convert order date string to LocalDateTime if present
+        if (response.getOrderDate() != null && !response.getOrderDate().isEmpty()) {
+            try {
+                dto.setOrderDate(LocalDateTime.parse(response.getOrderDate()));
+            } catch (Exception e) {
+                // Handle date parsing error gracefully
+                dto.setOrderDate(LocalDateTime.now());
+            }
         }
         
-        if (response.hasDeliveryDate()) {
-            dto.setDeliveryDate(LocalDateTime.ofInstant(
-                Instant.ofEpochSecond(response.getDeliveryDate().getSeconds()),
-                ZoneId.systemDefault()));
+        // Convert delivery date string to LocalDateTime if present
+        if (response.getDeliveryDate() != null && !response.getDeliveryDate().isEmpty()) {
+            try {
+                dto.setDeliveryDate(LocalDateTime.parse(response.getDeliveryDate()));
+            } catch (Exception e) {
+                // Handle date parsing error gracefully
+                dto.setDeliveryDate(null);
+            }
         }
         
         // Map money value
         if (response.hasTotalAmount()) {
-            OrderServiceOuterClass.Money totalAmount = response.getTotalAmount();
+            Order.Money totalAmount = response.getTotalAmount();
             dto.setTotalAmount(new SharedMoneyValue(
-                BigDecimal.valueOf(totalAmount.getAmount()),
+                new BigDecimal(totalAmount.getAmount()),
                 totalAmount.getCurrency()
             ));
         }
@@ -92,7 +99,7 @@ public class InfrastructureOrderRepositoryImpl implements DomainOutputPortOrderR
         
         // Map order items
         List<SharedOrderItemDTO> items = new ArrayList<>();
-        for (OrderServiceOuterClass.OrderItem item : response.getItemsList()) {
+        for (Order.OrderItem item : response.getItemsList()) {
             SharedOrderItemDTO itemDto = new SharedOrderItemDTO();
             itemDto.setOrderItemId(item.getOrderItemId());
             itemDto.setProductId(item.getProductId());
@@ -101,23 +108,23 @@ public class InfrastructureOrderRepositoryImpl implements DomainOutputPortOrderR
             
             // Map unit price
             if (item.hasUnitPrice()) {
-                OrderServiceOuterClass.Money unitPrice = item.getUnitPrice();
+                Order.Money unitPrice = item.getUnitPrice();
                 itemDto.setUnitPrice(new SharedMoneyValue(
-                    BigDecimal.valueOf(unitPrice.getAmount()),
+                    new BigDecimal(unitPrice.getAmount()),
                     unitPrice.getCurrency()
                 ));
             }
             
             // Map total price
             if (item.hasTotalPrice()) {
-                OrderServiceOuterClass.Money totalPrice = item.getTotalPrice();
+                Order.Money totalPrice = item.getTotalPrice();
                 itemDto.setTotalPrice(new SharedMoneyValue(
-                    BigDecimal.valueOf(totalPrice.getAmount()),
+                    new BigDecimal(totalPrice.getAmount()),
                     totalPrice.getCurrency()
                 ));
             }
             
-            itemDto.setReturnable(item.getIsReturnable());
+            itemDto.setIsReturnable(item.getIsReturnable());
             items.add(itemDto);
         }
         dto.setItems(items);
