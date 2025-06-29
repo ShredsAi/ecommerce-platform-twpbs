@@ -1,0 +1,589 @@
+openapi: 3.0.0
+info:
+  title: Inventory Tracking API
+  description: |
+    The Inventory Tracking Shred API provides comprehensive inventory management capabilities including:
+    - Real-time stock level queries
+    - Stock adjustments with full audit trail
+    - Safety stock rule management
+    - Stock validation for reservations
+    - Low stock alert management
+  version: "1.0.0"
+  contact:
+    name: AI Shreds Team
+    email: support@aishreds.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080/api
+    description: Development server
+  - url: https://api.inventory.aishreds.com/api
+    description: Production server
+
+security:
+  - basicAuth: []
+  - bearerAuth: []
+
+paths:
+  /v1/inventory/stock/{skuId}/{locationId}:
+    get:
+      tags:
+        - Stock Management
+      summary: Get stock levels for a specific SKU at a location
+      description: Retrieves current stock quantity, reserved quantity, and available quantity for a given SKU-Location pair
+      operationId: getStock
+      parameters:
+        - name: skuId
+          in: path
+          required: true
+          description: Unique identifier for the SKU
+          schema:
+            type: string
+            pattern: '^[A-Z0-9-]+$'
+            example: "SKU-001"
+        - name: locationId
+          in: path
+          required: true
+          description: Unique identifier for the location
+          schema:
+            type: string
+            pattern: '^[A-Z0-9-]+$'
+            example: "LOC-001"
+      responses:
+        '200':
+          description: Stock level details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockLevelDTO'
+              examples:
+                normalStock:
+                  summary: Normal stock levels
+                  value:
+                    skuId: "SKU-001"
+                    locationId: "LOC-001"
+                    quantity: 100.0
+                    reserved: 10.0
+                    available: 90.0
+                lowStock:
+                  summary: Low stock levels
+                  value:
+                    skuId: "SKU-006"
+                    locationId: "LOC-001"
+                    quantity: 5.0
+                    reserved: 0.0
+                    available: 5.0
+        '404':
+          description: Stock record not found for the given SKU-Location pair
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/inventory/adjust:
+    post:
+      tags:
+        - Stock Management
+      summary: Adjust stock levels
+      description: |
+        Creates a stock adjustment (increase or decrease) with full audit trail and validation.
+        Supports various adjustment reasons and maintains complete transaction history.
+      operationId: adjustStock
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockAdjustmentRequestDTO'
+            examples:
+              stockReceipt:
+                summary: Stock receipt adjustment
+                value:
+                  skuId: "SKU-001"
+                  locationId: "LOC-001"
+                  adjustment: 25.0
+                  reason: "STOCK_RECEIPT"
+              damageAdjustment:
+                summary: Damage adjustment
+                value:
+                  skuId: "SKU-002"
+                  locationId: "LOC-001"
+                  adjustment: -5.0
+                  reason: "DAMAGE"
+      responses:
+        '200':
+          description: Stock adjustment completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockAdjustmentResponseDTO'
+              examples:
+                success:
+                  summary: Successful adjustment
+                  value:
+                    status: "SUCCESS"
+                    ledgerId: "5a1c0f3e-b7f3-4f4a-8ab1-dc6a8b7a81a1"
+                    newQuantity: 125.0
+                    timestamp: "2024-01-15T10:30:00Z"
+        '400':
+          description: Invalid adjustment request or business rule violation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Optimistic lock conflict or concurrent modification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/inventory/safety-rules:
+    post:
+      tags:
+        - Safety Stock Management
+      summary: Create or update safety stock rule
+      description: |
+        Creates or updates a safety stock rule that defines the minimum allowable quantity
+        for a SKU-Location pair. When stock falls below this threshold, alerts are generated.
+      operationId: createSafetyRule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SafetyRuleRequestDTO'
+            examples:
+              newRule:
+                summary: New safety stock rule
+                value:
+                  skuId: "SKU-001"
+                  locationId: "LOC-001"
+                  minQuantity: 20.0
+      responses:
+        '201':
+          description: Safety stock rule created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SafetyRuleResponseDTO'
+              examples:
+                created:
+                  summary: Rule created
+                  value:
+                    ruleId: "6b2d1g4f-c8g4-5g5b-9bc2-ed7b9c8b92b1"
+                    skuId: "SKU-001"
+                    locationId: "LOC-001"
+                    minQuantity: 20.0
+                    isActive: true
+        '200':
+          description: Safety stock rule updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SafetyRuleResponseDTO'
+        '400':
+          description: Invalid rule request or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/inventory/safety-rules/{ruleId}:
+    delete:
+      tags:
+        - Safety Stock Management
+      summary: Deactivate safety stock rule
+      description: Deactivates a safety stock rule by setting its status to inactive
+      operationId: deactivateSafetyRule
+      parameters:
+        - name: ruleId
+          in: path
+          required: true
+          description: Unique identifier for the safety stock rule
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Safety stock rule deactivated successfully
+        '404':
+          description: Safety stock rule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/inventory/alerts:
+    get:
+      tags:
+        - Alert Management
+      summary: Get low stock alerts
+      description: Retrieves active low stock alerts with optional filtering
+      operationId: getLowStockAlerts
+      parameters:
+        - name: status
+          in: query
+          description: Filter alerts by status
+          schema:
+            type: string
+            enum: ["PENDING", "ACKNOWLEDGED", "RESOLVED"]
+        - name: skuId
+          in: query
+          description: Filter alerts by SKU ID
+          schema:
+            type: string
+        - name: locationId
+          in: query
+          description: Filter alerts by location ID
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of alerts to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+      responses:
+        '200':
+          description: Low stock alerts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LowStockAlertEvent'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/inventory/alerts/{alertId}/acknowledge:
+    post:
+      tags:
+        - Alert Management
+      summary: Acknowledge low stock alert
+      description: Marks a low stock alert as acknowledged
+      operationId: acknowledgeAlert
+      parameters:
+        - name: alertId
+          in: path
+          required: true
+          description: Unique identifier for the alert
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Alert acknowledged successfully
+        '404':
+          description: Alert not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    StockLevelDTO:
+      type: object
+      required:
+        - skuId
+        - locationId
+        - quantity
+        - reserved
+        - available
+      properties:
+        skuId:
+          type: string
+          description: Unique identifier for the SKU
+          example: "SKU-001"
+        locationId:
+          type: string
+          description: Unique identifier for the location
+          example: "LOC-001"
+        quantity:
+          type: number
+          format: decimal
+          minimum: 0
+          description: Total physical stock quantity
+          example: 100.0
+        reserved:
+          type: number
+          format: decimal
+          minimum: 0
+          description: Quantity currently reserved
+          example: 10.0
+        available:
+          type: number
+          format: decimal
+          minimum: 0
+          description: Available quantity for new orders
+          example: 90.0
+
+    StockAdjustmentRequestDTO:
+      type: object
+      required:
+        - skuId
+        - locationId
+        - adjustment
+        - reason
+      properties:
+        skuId:
+          type: string
+          description: Unique identifier for the SKU
+          pattern: '^[A-Z0-9-]+$'
+          example: "SKU-001"
+        locationId:
+          type: string
+          description: Unique identifier for the location
+          pattern: '^[A-Z0-9-]+$'
+          example: "LOC-001"
+        adjustment:
+          type: number
+          format: decimal
+          description: Adjustment amount (positive for increase, negative for decrease)
+          example: 25.0
+        reason:
+          type: string
+          description: Reason for the stock adjustment
+          enum: ["STOCK_RECEIPT", "DAMAGE", "CYCLE_COUNT", "ERP_SYNC", "RETURN", "TRANSFER", "THEFT", "OTHER"]
+          example: "STOCK_RECEIPT"
+
+    StockAdjustmentResponseDTO:
+      type: object
+      required:
+        - status
+        - ledgerId
+        - newQuantity
+        - timestamp
+      properties:
+        status:
+          type: string
+          description: Status of the adjustment operation
+          example: "SUCCESS"
+        ledgerId:
+          type: string
+          format: uuid
+          description: Unique identifier for the stock ledger entry
+          example: "5a1c0f3e-b7f3-4f4a-8ab1-dc6a8b7a81a1"
+        newQuantity:
+          type: number
+          format: decimal
+          description: New quantity after adjustment
+          example: 125.0
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp when the adjustment was completed
+          example: "2024-01-15T10:30:00Z"
+
+    SafetyRuleRequestDTO:
+      type: object
+      required:
+        - skuId
+        - locationId
+        - minQuantity
+      properties:
+        skuId:
+          type: string
+          description: Unique identifier for the SKU
+          pattern: '^[A-Z0-9-]+$'
+          example: "SKU-001"
+        locationId:
+          type: string
+          description: Unique identifier for the location
+          pattern: '^[A-Z0-9-]+$'
+          example: "LOC-001"
+        minQuantity:
+          type: number
+          format: decimal
+          minimum: 0
+          description: Minimum quantity threshold
+          example: 20.0
+
+    SafetyRuleResponseDTO:
+      type: object
+      required:
+        - ruleId
+        - skuId
+        - locationId
+        - minQuantity
+        - isActive
+      properties:
+        ruleId:
+          type: string
+          format: uuid
+          description: Unique identifier for the safety stock rule
+          example: "6b2d1g4f-c8g4-5g5b-9bc2-ed7b9c8b92b1"
+        skuId:
+          type: string
+          description: Unique identifier for the SKU
+          example: "SKU-001"
+        locationId:
+          type: string
+          description: Unique identifier for the location
+          example: "LOC-001"
+        minQuantity:
+          type: number
+          format: decimal
+          minimum: 0
+          description: Minimum quantity threshold
+          example: 20.0
+        isActive:
+          type: boolean
+          description: Whether the rule is currently active
+          example: true
+
+    LowStockAlertEvent:
+      type: object
+      required:
+        - alertId
+        - skuId
+        - locationId
+        - alertLevel
+        - currentQuantity
+        - threshold
+      properties:
+        alertId:
+          type: string
+          format: uuid
+          description: Unique identifier for the alert
+          example: "7c3e2h5g-d9h5-6h6c-0cd3-fe8c0d9c03c1"
+        skuId:
+          type: string
+          description: Unique identifier for the SKU
+          example: "SKU-006"
+        locationId:
+          type: string
+          description: Unique identifier for the location
+          example: "LOC-001"
+        alertLevel:
+          type: string
+          description: Severity level of the alert
+          enum: ["LOW", "CRITICAL"]
+          example: "LOW"
+        currentQuantity:
+          type: number
+          format: decimal
+          description: Current stock quantity that triggered the alert
+          example: 5.0
+        threshold:
+          type: number
+          format: decimal
+          description: Safety stock threshold that was breached
+          example: 10.0
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+        - timestamp
+      properties:
+        error:
+          type: string
+          description: Error type or category
+          example: "STOCK_NOT_FOUND"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Stock record not found for SKU-001 at location LOC-001"
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp when the error occurred
+          example: "2024-01-15T10:30:00Z"
+        path:
+          type: string
+          description: API path where the error occurred
+          example: "/api/v1/inventory/stock/SKU-001/LOC-001"
+        details:
+          type: object
+          description: Additional error details
+          additionalProperties: true
+
+  examples:
+    StockNotFoundError:
+      summary: Stock record not found
+      value:
+        error: "STOCK_NOT_FOUND"
+        message: "Stock record not found for SKU-001 at location LOC-001"
+        timestamp: "2024-01-15T10:30:00Z"
+        path: "/api/v1/inventory/stock/SKU-001/LOC-001"
+
+    InvalidAdjustmentError:
+      summary: Invalid stock adjustment
+      value:
+        error: "INVALID_ADJUSTMENT"
+        message: "Adjustment would result in negative stock quantity"
+        timestamp: "2024-01-15T10:30:00Z"
+        path: "/api/v1/inventory/adjust"
+        details:
+          currentQuantity: 5.0
+          requestedAdjustment: -10.0
+
+    ConcurrencyError:
+      summary: Optimistic lock conflict
+      value:
+        error: "OPTIMISTIC_LOCK_EXCEPTION"
+        message: "Stock record was modified by another process"
+        timestamp: "2024-01-15T10:30:00Z"
+        path: "/api/v1/inventory/adjust"
