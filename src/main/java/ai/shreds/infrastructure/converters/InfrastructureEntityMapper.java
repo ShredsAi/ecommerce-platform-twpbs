@@ -44,7 +44,7 @@ public interface InfrastructureEntityMapper {
     @Mapping(target = "skuId", expression = "java(rule.getSkuId() != null ? rule.getSkuId().getValue() : null)")
     @Mapping(target = "locationId", expression = "java(rule.getLocationId() != null ? rule.getLocationId().getValue() : null)")
     @Mapping(target = "minQuantity", expression = "java(rule.getMinQuantity() != null ? rule.getMinQuantity().getValue() : null)")
-    @Mapping(target = "active", expression = "java(rule.isActive())")
+    @Mapping(target = "active", expression = "java(rule.isActive())") // Revert back to 'active' for MapStruct bean property mapping
     @Mapping(target = "createdAt", source = "createdAt")
     @Mapping(target = "updatedAt", source = "updatedAt")
     InfrastructureJpaEntitySafetyStockRule toJpaEntity(DomainEntitySafetyStockRule rule);
@@ -122,7 +122,7 @@ public interface InfrastructureEntityMapper {
     @Mapping(target = "skuId", expression = "java(sku.getSkuId() != null ? sku.getSkuId().getValue() : null)")
     @Mapping(target = "productId", expression = "java(sku.getProductId() != null ? sku.getProductId().getValue() : null)")
     @Mapping(target = "vendorSku", expression = "java(sku.getVendorSku() != null ? sku.getVendorSku().getValue() : null)")
-    @Mapping(target = "active", expression = "java(sku.isActive())")
+    @Mapping(target = "active", expression = "java(sku.isActive())") // Revert back to 'active' for MapStruct bean property mapping
     @Mapping(target = "createdAt", source = "createdAt")
     @Mapping(target = "updatedAt", source = "updatedAt")
     InfrastructureJpaEntitySKU toJpaEntity(DomainEntitySKU sku);
@@ -144,7 +144,7 @@ public interface InfrastructureEntityMapper {
     @Mapping(target = "name", expression = "java(location.getName() != null ? location.getName().getValue() : null)")
     @Mapping(target = "type", expression = "java(location.getType() != null ? location.getType().name() : null)")
     @Mapping(target = "address", source = "address", qualifiedByName = "addressToJpaEmbeddable")
-    @Mapping(target = "active", expression = "java(location.isActive())")
+    @Mapping(target = "active", expression = "java(location.isActive())") // Revert back to 'active' for MapStruct bean property mapping
     @Mapping(target = "createdAt", source = "createdAt")
     InfrastructureJpaEntityLocation toJpaEntity(DomainEntityLocation location);
 
@@ -293,5 +293,4 @@ public interface InfrastructureEntityMapper {
             throw new RuntimeException("Error deserializing reconciliation errors", e);
         }
     }
-
 }

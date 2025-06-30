@@ -35,10 +35,11 @@ public interface InfrastructureJpaSafetyStockRuleRepository extends JpaRepositor
 
     /**
      * Deactivates all safety stock rules for a specific SKU
+     * Note: updatedAt is handled automatically by @PreUpdate in the entity
      */
     @Modifying
     @Transactional
-    @Query("UPDATE InfrastructureJpaEntitySafetyStockRule r SET r.isActive = false, r.updatedAt = CURRENT_TIMESTAMP WHERE r.skuId = :skuId")
+    @Query("UPDATE InfrastructureJpaEntitySafetyStockRule r SET r.isActive = false WHERE r.skuId = :skuId")
     void deactivateAllBySkuId(@Param("skuId") String skuId);
 
     /**

@@ -5,5 +5,5 @@ import java.util.List;
 
 public interface DomainInputPortSafetyStockMonitor {
     List<SharedLowStockAlertEvent> evaluateStockLevels();
-    void generateAlerts();
+    void persistAlerts(List<SharedLowStockAlertEvent> events);
 }

@@ -9,10 +9,12 @@ import ai.shreds.domain.ports.DomainOutputPortLocationRepository;
 import ai.shreds.domain.value_objects.*;
 import ai.shreds.shared.dtos.SharedSafetyRuleRequestDTO;
 import ai.shreds.shared.dtos.SharedSafetyRuleResponseDTO;
+import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 import java.util.UUID;
 
+@Service
 public class DomainServiceSafetyStockRule implements DomainInputPortSafetyStockRule {
     private final DomainOutputPortSafetyStockRuleRepository ruleRepository;
     private final DomainOutputPortSKURepository skuRepository;

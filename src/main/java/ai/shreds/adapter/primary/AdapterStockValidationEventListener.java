@@ -77,6 +77,8 @@ public class AdapterStockValidationEventListener {
             
             // Create error response - stock is not available when error occurs
             SharedStockValidationResponseEvent errorResponse = new SharedStockValidationResponseEvent(
+                    event.getSkuId(),
+                    event.getLocationId(),
                     false, // Not available when error occurs
                     null,  // Unknown available quantity
                     event.getRequestedQuantity());

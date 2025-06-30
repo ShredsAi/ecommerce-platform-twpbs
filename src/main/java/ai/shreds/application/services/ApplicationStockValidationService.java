@@ -39,18 +39,24 @@ public class ApplicationStockValidationService implements ApplicationStockValida
 
         // Cache miss or invalid cache, delegate to domain service
         log.debug("Cache miss, performing validation through domain service");
-        return domainValidationPort.validateAvailability(
+        SharedStockValidationResponseEvent domainResponse = domainValidationPort.validateAvailability(
                 event.getSkuId(),
                 event.getLocationId(),
                 event.getRequestedQuantity()
         );
+        
+        // Add skuId and locationId to the response for proper correlation
+        domainResponse.setSkuId(event.getSkuId());
+        domainResponse.setLocationId(event.getLocationId());
+        
+        return domainResponse;
     }
 
     private SharedStockValidationResponseEvent validateFromCache(SharedCacheKey cacheKey, 
             SharedStockValidationRequestEvent event) {
         try {
             return cachePort.get(cacheKey)
-                    .map(stockLevel -> createValidationResponse(stockLevel, event.getRequestedQuantity()))
+                    .map(stockLevel -> createValidationResponse(stockLevel, event))
                     .orElse(null);
         } catch (Exception e) {
             log.warn("Error accessing cache during validation, falling back to database", e);
@@ -59,12 +65,14 @@ public class ApplicationStockValidationService implements ApplicationStockValida
     }
 
     private SharedStockValidationResponseEvent createValidationResponse(SharedStockLevelDTO stockLevel, 
-            java.math.BigDecimal requestedQuantity) {
-        boolean isAvailable = stockLevel.getAvailable().compareTo(requestedQuantity) >= 0;
+            SharedStockValidationRequestEvent event) {
+        boolean isAvailable = stockLevel.getAvailable().compareTo(event.getRequestedQuantity()) >= 0;
         return new SharedStockValidationResponseEvent(
+                event.getSkuId(),
+                event.getLocationId(),
                 isAvailable,
                 stockLevel.getAvailable(),
-                requestedQuantity
+                event.getRequestedQuantity()
         );
     }
 }

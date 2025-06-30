@@ -13,11 +13,13 @@ import ai.shreds.domain.value_objects.*;
 import ai.shreds.shared.dtos.SharedERPUpdateMessage;
 import ai.shreds.shared.dtos.ERPAdjustmentItem;
 import ai.shreds.shared.enums.SharedEnumAdjustmentReason;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+@Service
 public class DomainServiceERPSync implements DomainInputPortERPSync {
     private final DomainOutputPortERPReconciliationRepository reconciliationRepository;
     private final DomainOutputPortStockLedgerRepository stockLedgerRepository;

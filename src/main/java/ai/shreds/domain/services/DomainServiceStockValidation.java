@@ -6,9 +6,11 @@ import ai.shreds.domain.ports.DomainInputPortStockValidation;
 import ai.shreds.domain.ports.DomainOutputPortStockLedgerRepository;
 import ai.shreds.domain.value_objects.DomainValueQuantity;
 import ai.shreds.shared.value_objects.SharedStockValidationResponseEvent;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
+@Service
 public class DomainServiceStockValidation implements DomainInputPortStockValidation {
     private final DomainOutputPortStockLedgerRepository stockLedgerRepository;
 
@@ -33,8 +35,10 @@ public class DomainServiceStockValidation implements DomainInputPortStockValidat
         // Determine if requested quantity is available
         boolean isAvailable = available.compareTo(requested) >= 0;
         
-        // Create and return validation response event
+        // Create and return validation response event with all required fields
         return new SharedStockValidationResponseEvent(
+                skuId,
+                locationId,
                 isAvailable, 
                 available.getValue(), 
                 requestedQuantity

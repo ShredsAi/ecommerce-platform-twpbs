@@ -1,15 +1,20 @@
 package ai.shreds.infrastructure.repositories;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import ai.shreds.domain.entities.DomainEntityReservation;
 import ai.shreds.domain.value_objects.DomainEnumReservationStatus;
+import ai.shreds.domain.value_objects.DomainValueReservationId;
 import ai.shreds.domain.ports.DomainOutputPortReservationRepository;
 import ai.shreds.infrastructure.entities.InfrastructureJpaEntityReservation;
 import ai.shreds.infrastructure.converters.InfrastructureEntityMapper;
@@ -72,6 +77,50 @@ public class InfrastructureReservationRepositoryImpl implements DomainOutputPort
             log.error("Failed to find active reservations for SKU: {} at location: {}", skuId, locationId, e);
             throw new InfrastructureExceptionDatabaseError(
                 "Failed to find active reservations: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public Optional<DomainEntityReservation> findById(DomainValueReservationId reservationId) {
+        try {
+            log.debug("Finding reservation by ID: {}", reservationId.getValue());
+            
+            Optional<InfrastructureJpaEntityReservation> jpaEntity = jpaRepository
+                .findById(reservationId.getValue());
+            
+            if (jpaEntity.isPresent()) {
+                DomainEntityReservation domainEntity = entityMapper.toDomainEntity(jpaEntity.get());
+                log.debug("Found reservation: {}", reservationId.getValue());
+                return Optional.of(domainEntity);
+            } else {
+                log.debug("Reservation not found: {}", reservationId.getValue());
+                return Optional.empty();
+            }
+        } catch (Exception e) {
+            log.error("Failed to find reservation by ID: {}", reservationId.getValue(), e);
+            throw new InfrastructureExceptionDatabaseError(
+                "Failed to find reservation by ID: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public List<DomainEntityReservation> findExpiredReservations(int batchSize) {
+        try {
+            log.debug("Finding expired reservations with batch size: {}", batchSize);
+            
+            List<InfrastructureJpaEntityReservation> expiredReservations = jpaRepository
+                .findExpiredReservations(Instant.now());
+                
+            List<DomainEntityReservation> domainReservations = expiredReservations.stream()
+                .map(entityMapper::toDomainEntity)
+                .collect(Collectors.toList());
+                
+            log.debug("Found {} expired reservations", domainReservations.size());
+            return domainReservations;
+        } catch (Exception e) {
+            log.error("Failed to find expired reservations", e);
+            throw new InfrastructureExceptionDatabaseError(
+                "Failed to find expired reservations: " + e.getMessage(), e);
         }
     }
 }

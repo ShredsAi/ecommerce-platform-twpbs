@@ -12,13 +12,20 @@ import ai.shreds.domain.value_objects.*;
 import ai.shreds.shared.dtos.SharedLowStockAlertEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Service
 public class DomainServiceSafetyStockMonitor implements DomainInputPortSafetyStockMonitor {
+    
+    private static final Logger log = LoggerFactory.getLogger(DomainServiceSafetyStockMonitor.class);
+    
     private final DomainOutputPortStockLedgerRepository stockLedgerRepository;
     private final DomainOutputPortSafetyStockRuleRepository ruleRepository;
     private final DomainOutputPortLowStockAlertRepository alertRepository;
@@ -41,33 +48,52 @@ public class DomainServiceSafetyStockMonitor implements DomainInputPortSafetySto
     public List<SharedLowStockAlertEvent> evaluateStockLevels() {
         List<SharedLowStockAlertEvent> alerts = new ArrayList<>();
         
-        ruleRepository.findAll().forEach(rule -> {
-            stockLedgerRepository.findBySkuIdAndLocationId(
-                    rule.getSkuId().getValue(),
-                    rule.getLocationId().getValue()
-            ).ifPresent(ledger -> {
-                DomainValueQuantity available = ledger.calculateAvailable();
-                if (checkAgainstRule(ledger, rule)) {
-                    DomainEventLowStockDetected event = new DomainEventLowStockDetected(
-                            UUID.randomUUID(),
-                            ledger.getSkuId().getValue(),
-                            ledger.getLocationId().getValue(),
-                            available.getValue(),
-                            rule.getMinQuantity().getValue(),
-                            Instant.now()
-                    );
-                    alerts.add(event.toLowStockAlertEvent());
-                }
-            });
+        log.debug("[SAFETY-MONITOR] Starting stock level evaluation");
+        
+        List<ai.shreds.domain.entities.DomainEntitySafetyStockRule> allRules = ruleRepository.findAll();
+        log.debug("[SAFETY-MONITOR] Found {} safety stock rules", allRules.size());
+        
+        allRules.forEach(rule -> {
+            String skuId = rule.getSkuId().getValue();
+            String locationId = rule.getLocationId().getValue();
+            log.debug("[SAFETY-MONITOR] Evaluating rule for SKU: {} at location: {}, min quantity: {}", 
+                     skuId, locationId, rule.getMinQuantity().getValue());
+            
+            stockLedgerRepository.findBySkuIdAndLocationId(skuId, locationId)
+                .ifPresentOrElse(
+                    ledger -> {
+                        DomainValueQuantity available = ledger.calculateAvailable();
+                        log.debug("[SAFETY-MONITOR] Found stock ledger - available: {}, threshold: {}", 
+                                 available.getValue(), rule.getMinQuantity().getValue());
+                        
+                        if (checkAgainstRule(ledger, rule)) {
+                            log.info("[SAFETY-MONITOR] LOW STOCK DETECTED for SKU: {} at location: {}, available: {}, threshold: {}",
+                                    skuId, locationId, available.getValue(), rule.getMinQuantity().getValue());
+                            
+                            DomainEventLowStockDetected event = new DomainEventLowStockDetected(
+                                    UUID.randomUUID(),
+                                    ledger.getSkuId().getValue(),
+                                    ledger.getLocationId().getValue(),
+                                    available.getValue(),
+                                    rule.getMinQuantity().getValue(),
+                                    Instant.now()
+                            );
+                            alerts.add(event.toLowStockAlertEvent());
+                        } else {
+                            log.debug("[SAFETY-MONITOR] Stock level OK for SKU: {} at location: {}, available: {} >= threshold: {}",
+                                     skuId, locationId, available.getValue(), rule.getMinQuantity().getValue());
+                        }
+                    },
+                    () -> log.warn("[SAFETY-MONITOR] No stock ledger found for SKU: {} at location: {}", skuId, locationId)
+                );
         });
         
+        log.debug("[SAFETY-MONITOR] Stock level evaluation completed - {} alerts generated", alerts.size());
         return alerts;
     }
 
     @Override
-    public void generateAlerts() {
-        List<SharedLowStockAlertEvent> events = evaluateStockLevels();
-        
+    public void persistAlerts(List<SharedLowStockAlertEvent> events) {
         for (SharedLowStockAlertEvent alertEvent : events) {
             // Check if alert already exists for this SKU and location
             if (alertRepository.findUnresolvedBySkuIdAndLocationId(
@@ -102,9 +128,17 @@ public class DomainServiceSafetyStockMonitor implements DomainInputPortSafetySto
         }
     }
 
+    public void generateAlerts() {
+        List<SharedLowStockAlertEvent> events = evaluateStockLevels();
+        persistAlerts(events);
+    }
+
     private boolean checkAgainstRule(ai.shreds.domain.entities.DomainEntityStockLedger ledger, 
                                     ai.shreds.domain.entities.DomainEntitySafetyStockRule rule) {
         DomainValueQuantity available = ledger.calculateAvailable();
-        return available.compareTo(rule.getMinQuantity()) < 0;
+        boolean isLowStock = available.compareTo(rule.getMinQuantity()) < 0;
+        log.debug("[SAFETY-MONITOR] Comparison - available: {} < threshold: {} = {}", 
+                 available.getValue(), rule.getMinQuantity().getValue(), isLowStock);
+        return isLowStock;
     }
 }

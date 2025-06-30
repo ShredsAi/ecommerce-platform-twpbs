@@ -1,0 +1,148 @@
+# Test configuration for integration tests
+server:
+  port: 0  # Random port for tests
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: inventory-tracking-shred-test
+  main:
+    allow-bean-definition-overriding: true
+  
+  # H2 Configuration - disabled to prevent conflicts
+  h2:
+    console:
+      enabled: false
+  
+  # PostgreSQL configuration - will be overridden by TestContainers
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  
+  # Schema initialization
+  sql:
+    init:
+      mode: never
+  
+  jpa:
+    hibernate:
+      ddl-auto: create
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.SnakeCasePhysicalNamingStrategy
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  
+  security:
+    filter:
+      enabled: false
+  
+  # Redis configuration - will be overridden by TestContainers
+  redis:
+    timeout: 2000
+    database: 0
+  
+  # Kafka configuration - will be overridden by TestContainers
+  kafka:
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 1
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      group-id: inventory-tracking-test-group
+      auto-offset-reset: earliest
+      properties:
+        spring.json.trusted.packages: "*"
+  
+  jms:
+    activemq:
+      in-memory: false
+      pool:
+        enabled: false
+    listener:
+      acknowledge-mode: auto
+      concurrency: 2
+
+# Application-specific configurations
+inventory:
+  kafka:
+    topics:
+      inventory-events: test.inventory.events
+      low-stock-alerts: test.inventory.alerts.low-stock
+  jms:
+    queues:
+      erp-updates: test.inventory.tracking.erp.updates
+      inventory-notifications: test.inventory.changes.notification
+  safety-stock:
+    monitor-interval: 30000  # 30 seconds for tests
+    batch-size: 100
+  erp-sync:
+    batch-size: 50
+    chunk-size: 10
+
+cache:
+  ttl: 10  # TTL in seconds as numeric value
+  caffeine:
+    maximum-size: 1000
+    expire-after-write: 30  # Seconds as numeric value
+
+outbox:
+  batch-size: 10
+  processing-interval: 5000  # 5 seconds for tests
+
+# Actuator configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  health:
+    redis:
+      enabled: true
+    db:
+      enabled: true
+    kafka:
+      enabled: true
+    jms:
+      enabled: false
+
+# Logging configuration
+logging:
+  level:
+    ai.shreds: DEBUG
+    org.springframework: INFO
+    org.hibernate: INFO
+    org.apache.kafka: WARN
+    redis.clients: WARN
+    testcontainers: WARN
+    org.testcontainers: WARN
+  pattern:
+    console: "%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: target/test-logs/inventory-tracking-test.log
+    max-size: 10MB
+    max-history: 3

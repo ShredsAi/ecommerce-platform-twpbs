@@ -9,6 +9,8 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SharedStockValidationResponseEvent {
+    private String skuId;
+    private String locationId;
     private Boolean isAvailable;
     private BigDecimal availableQuantity;
     private BigDecimal requestedQuantity;

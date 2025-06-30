@@ -13,6 +13,8 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -52,7 +54,8 @@ public class InfrastructureJpaEntityOutboxEvent {
     private String eventType;
 
     @NotNull
-    @Column(name = "payload", nullable = false, columnDefinition = "jsonb")
+    @Column(name = "payload", nullable = false)
+    @JdbcTypeCode(SqlTypes.JSON) // This works with both PostgreSQL and H2
     private String payload;
 
     @Column(name = "occurred_on", nullable = false, updatable = false)

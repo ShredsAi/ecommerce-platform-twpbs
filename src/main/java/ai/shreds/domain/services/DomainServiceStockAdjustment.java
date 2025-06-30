@@ -15,9 +15,11 @@ import ai.shreds.domain.value_objects.*;
 import ai.shreds.shared.dtos.SharedStockAdjustmentResponseDTO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 
+@Service
 public class DomainServiceStockAdjustment implements DomainInputPortStockAdjustment {
     private final DomainOutputPortStockLedgerRepository stockLedgerRepository;
     private final DomainOutputPortSKURepository skuRepository;

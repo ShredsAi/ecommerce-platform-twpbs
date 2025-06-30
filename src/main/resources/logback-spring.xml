@@ -212,7 +212,7 @@
     </springProfile>
     
     <!-- Default root logger -->
-    <springProfile name="!dev & !test & !prod">
+    <springProfile name="!(dev | test | prod)">
         <root level="INFO">
             <appender-ref ref="ASYNC_CONSOLE"/>
             <appender-ref ref="ASYNC_FILE"/>
