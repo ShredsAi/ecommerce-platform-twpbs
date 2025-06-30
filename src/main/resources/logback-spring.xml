@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="30 seconds">
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    
+    <!-- Properties -->
+    <property name="LOG_PATTERN" value="%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n"/>
+    <property name="CONSOLE_PATTERN" value="%clr(%d{ISO8601}){faint} %clr([%15.15t]){faint} %clr(%-5p) %clr(%-40.40logger{39}){cyan} %clr(:|){faint} %m%n%wex"/>
+    <property name="FILE_PATTERN" value="%d{ISO8601} [%thread] %-5level %logger{36} [%X{requestId:-}] [%X{userId:-}] - %msg%n"/>
+    <property name="JSON_PATTERN" value='{"timestamp":"%d{ISO8601}","level":"%level","thread":"%thread","logger":"%logger{36}","message":"%msg","requestId":"%X{requestId:-}","userId":"%X{userId:-}","exception":"%ex{full}"}%n'/>
+    
+    <springProfile name="!prod">
+        <!-- Console Appender for Development -->
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                <pattern>${CONSOLE_PATTERN}</pattern>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+    </springProfile>
+    
+    <springProfile name="prod">
+        <!-- Console Appender for Production (JSON format) -->
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                <pattern>${JSON_PATTERN}</pattern>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+    </springProfile>
+    
+    <!-- Async Console Appender for better performance -->
+    <appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="CONSOLE"/>
+        <queueSize>1000</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>false</includeCallerData>
+    </appender>
+    
+    <!-- Application File Appender -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE:-logs/inventory-tracking.log}</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${FILE_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_FILE:-logs/inventory-tracking}-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- Error File Appender -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE:-logs/inventory-tracking}-errors.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${FILE_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_FILE:-logs/inventory-tracking}-errors-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>60</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+    </appender>
+    
+    <!-- Performance/Audit Log Appender -->
+    <appender name="AUDIT_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE:-logs/inventory-tracking}-audit.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d{ISO8601} [%thread] %-5level %logger{36} [%X{requestId:-}] [%X{userId:-}] [%X{operation:-}] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_FILE:-logs/inventory-tracking}-audit-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>90</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- Async File Appenders -->
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="FILE"/>
+        <queueSize>2000</queueSize>
+        <discardingThreshold>20</discardingThreshold>
+        <includeCallerData>false</includeCallerData>
+    </appender>
+    
+    <appender name="ASYNC_ERROR_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="ERROR_FILE"/>
+        <queueSize>1000</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>true</includeCallerData>
+    </appender>
+    
+    <appender name="ASYNC_AUDIT_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="AUDIT_FILE"/>
+        <queueSize>1000</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>false</includeCallerData>
+    </appender>
+    
+    <!-- Logger configurations -->
+    
+    <!-- Application loggers -->
+    <logger name="ai.shreds" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+        <appender-ref ref="ASYNC_ERROR_FILE"/>
+    </logger>
+    
+    <!-- Audit logger -->
+    <logger name="ai.shreds.audit" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_AUDIT_FILE"/>
+    </logger>
+    
+    <!-- Security logger -->
+    <logger name="ai.shreds.security" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_AUDIT_FILE"/>
+        <appender-ref ref="ASYNC_ERROR_FILE"/>
+    </logger>
+    
+    <!-- Performance logger -->
+    <logger name="ai.shreds.performance" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_AUDIT_FILE"/>
+    </logger>
+    
+    <!-- Spring Framework loggers -->
+    <logger name="org.springframework" level="INFO"/>
+    <logger name="org.springframework.web" level="INFO"/>
+    <logger name="org.springframework.security" level="INFO"/>
+    <logger name="org.springframework.kafka" level="WARN"/>
+    <logger name="org.springframework.jms" level="WARN"/>
+    <logger name="org.springframework.data" level="WARN"/>
+    <logger name="org.springframework.transaction" level="WARN"/>
+    
+    <!-- Database loggers -->
+    <logger name="org.hibernate" level="WARN"/>
+    <logger name="org.hibernate.SQL" level="WARN"/>
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="WARN"/>
+    <logger name="org.hibernate.stat" level="WARN"/>
+    <logger name="com.zaxxer.hikari" level="WARN"/>
+    
+    <!-- External service loggers -->
+    <logger name="org.apache.kafka" level="WARN"/>
+    <logger name="kafka.producer" level="WARN"/>
+    <logger name="kafka.consumer" level="WARN"/>
+    <logger name="redis.clients" level="WARN"/>
+    <logger name="org.apache.activemq" level="WARN"/>
+    
+    <!-- Tomcat/Servlet loggers -->
+    <logger name="org.apache.catalina" level="WARN"/>
+    <logger name="org.apache.coyote" level="WARN"/>
+    <logger name="org.apache.tomcat" level="WARN"/>
+    
+    <!-- Eliminate noise from third-party libraries -->
+    <logger name="org.apache.http" level="WARN"/>
+    <logger name="httpclient.wire" level="WARN"/>
+    <logger name="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping" level="WARN"/>
+    
+    <springProfile name="dev">
+        <!-- Development specific logging -->
+        <logger name="ai.shreds" level="DEBUG"/>
+        <logger name="org.springframework.web" level="DEBUG"/>
+        <logger name="org.springframework.security" level="DEBUG"/>
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
+        <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE"/>
+        <logger name="redis.clients" level="DEBUG"/>
+        <logger name="org.apache.kafka" level="INFO"/>
+    </springProfile>
+    
+    <springProfile name="test">
+        <!-- Test specific logging -->
+        <logger name="ai.shreds" level="DEBUG"/>
+        <logger name="org.springframework.test" level="DEBUG"/>
+        <logger name="org.testcontainers" level="INFO"/>
+    </springProfile>
+    
+    <springProfile name="prod">
+        <!-- Production specific logging -->
+        <logger name="ai.shreds" level="INFO"/>
+        <logger name="org.springframework" level="WARN"/>
+        <logger name="org.hibernate" level="ERROR"/>
+        <!-- Disable debug logging in production -->
+        <logger name="org.springframework.web.servlet.DispatcherServlet" level="WARN"/>
+    </springProfile>
+    
+    <!-- Root logger configuration -->
+    <springProfile name="dev,test">
+        <root level="INFO">
+            <appender-ref ref="ASYNC_CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
+        </root>
+    </springProfile>
+    
+    <springProfile name="prod">
+        <root level="WARN">
+            <appender-ref ref="ASYNC_CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
+        </root>
+    </springProfile>
+    
+    <!-- Default root logger -->
+    <springProfile name="!(dev | test | prod)">
+        <root level="INFO">
+            <appender-ref ref="ASYNC_CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
+        </root>
+    </springProfile>
+    
+</configuration>

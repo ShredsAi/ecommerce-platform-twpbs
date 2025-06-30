@@ -1,0 +1,216 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: inventory-tracking-shred
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/inventory
+    username: inventory_user
+    password: inventory_pass
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.SnakeCasePhysicalNamingStrategy
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  
+  security:
+    user:
+      name: admin
+      password: admin123
+      roles: ADMIN
+  
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 2000
+    lettuce:
+      pool:
+        max-active: 10
+        max-idle: 8
+        min-idle: 2
+        max-wait: -1
+  
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 1
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      group-id: inventory-tracking-group
+      auto-offset-reset: earliest
+      properties:
+        spring.json.trusted.packages: "*"
+  
+  jms:
+    activemq:
+      broker-url: tcp://localhost:61616
+      user: admin
+      password: admin
+      pool:
+        enabled: true
+        max-connections: 10
+        idle-timeout: 30000
+    listener:
+      acknowledge-mode: auto
+      concurrency: 3-10
+
+# Application-specific configurations
+inventory:
+  kafka:
+    topics:
+      inventory-events: inventory.events
+      low-stock-alerts: inventory.alerts.low-stock
+  jms:
+    queues:
+      erp-updates: inventory.tracking.erp.updates
+      inventory-notifications: inventory.changes.notification
+  safety-stock:
+    monitor-interval: 300000  # 5 minutes in milliseconds
+    batch-size: 1000
+  erp-sync:
+    batch-size: 500
+    chunk-size: 100
+
+cache:
+  ttl: 60  # TTL in seconds as numeric value
+  caffeine:
+    maximum-size: 10000
+    expire-after-write: 300
+
+outbox:
+  batch-size: 100
+  processing-interval: 10000  # 10 seconds
+
+# Actuator configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus,info,env
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: always
+  health:
+    redis:
+      enabled: true
+    db:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: inventory-tracking-shred
+
+# Logging configuration
+logging:
+  level:
+    ai.shreds: INFO
+    org.springframework: INFO
+    org.hibernate: WARN
+    org.apache.kafka: WARN
+    redis.clients: WARN
+  pattern:
+    console: "%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/inventory-tracking.log
+    max-size: 10MB
+    max-history: 10
+
+---
+# Development profile
+spring:
+  config:
+    activate:
+      on-profile: dev
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+  h2:
+    console:
+      enabled: true
+
+logging:
+  level:
+    ai.shreds: DEBUG
+    org.springframework: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+---
+# Production profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+  redis:
+    host: ${REDIS_HOST}
+    port: ${REDIS_PORT:6379}
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKERS}
+  jms:
+    activemq:
+      broker-url: ${JMS_BROKER_URL}
+
+logging:
+  level:
+    root: WARN
+    ai.shreds: INFO
+  file:
+    name: /app/logs/inventory-tracking.log
+
+---
+# Docker profile
+spring:
+  config:
+    activate:
+      on-profile: docker
+  datasource:
+    url: jdbc:postgresql://postgres:5432/inventory
+    username: inventory_user
+    password: inventory_pass
+  redis:
+    host: redis
+    port: 6379
+  kafka:
+    bootstrap-servers: kafka:9092
+  jms:
+    activemq:
+      broker-url: tcp://activemq:61616
